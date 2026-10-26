@@ -1,0 +1,52 @@
+{
+  "name": "twokey-arc",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.26.2",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "db:up": "docker compose up -d postgres",
+    "db:generate": "pnpm --filter @twokey-arc/db generate",
+    "db:migrate": "tsx --env-file-if-exists=.env packages/db/src/migrate.ts",
+    "circle:setup": "tsx --env-file-if-exists=.env scripts/circle-setup.ts",
+    "circle:smoke": "tsx --env-file-if-exists=.env scripts/circle-smoke.ts",
+    "seed": "tsx --env-file-if-exists=.env scripts/seed-mandate.ts",
+    "owner:set-password": "tsx scripts/owner-set-password.ts",
+    "dev:web": "pnpm --filter @twokey-arc/web dev",
+    "dev:executor": "tsx --env-file-if-exists=.env apps/executor/src/main.ts",
+    "demo:agent": "tsx --env-file-if-exists=.env apps/demo-agent/src/main.ts",
+    "demo:run": "tsx --env-file-if-exists=.env scripts/demo-run.ts",
+    "chaos": "tsx --env-file-if-exists=.env scripts/chaos-retry.ts",
+    "mcp": "tsx apps/mcp/src/stdio.ts"
+  },
+  "devDependencies": {
+    "@testcontainers/postgresql": "11.14.0",
+    "@types/node": "24.0.3",
+    "@types/pg": "8.15.5",
+    "@vitest/coverage-v8": "3.2.4",
+    "fast-check": "4.10.2",
+    "pg": "8.23.1",
+    "tsx": "4.19.4",
+    "typescript": "5.9.2",
+    "vitest": "3.2.4",
+    "@node-rs/argon2": "2.0.2",
+    "@twokey-arc/core": "workspace:*",
+    "@twokey-arc/circle": "workspace:*",
+    "@twokey-arc/db": "workspace:*",
+    "@twokey-arc/sdk": "workspace:*",
+    "@twokey-arc/money": "workspace:*",
+    "@twokey-arc/seal": "workspace:*",
+    "@twokey-arc/policy": "workspace:*",
+    "drizzle-orm": "0.44.7"
+  },
+  "pnpm": {
+    "overrides": {
+      "pg": "8.23.1"
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "id": "BM-7",
+  "from": "accounts@brightline.example",
+  "subject": "BM-7: campaign creative, first invoice",
+  "body": "Hello! First invoice from Brightline Media for the campaign creative: USDC 0.75 to {{BRIGHTLINE}} on Arc. Ref BM-7.",
+  "extracted": { "address": "{{BRIGHTLINE}}", "payee_name": "Brightline Media", "amount": "0.75", "memo": "BM-7" },
+  "expect": "pending_approval"
+}

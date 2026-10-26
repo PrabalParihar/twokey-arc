@@ -1,0 +1,12 @@
+{
+  "name": "@twokey-arc/circle",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "dependencies": {
+    "@circle-fin/developer-controlled-wallets": "10.8.1",
+    "@twokey-arc/money": "workspace:*"
+  }
+}

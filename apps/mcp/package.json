@@ -1,0 +1,12 @@
+{
+  "name": "@twokey/mcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": { "twokey-mcp": "src/stdio.ts" },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "@twokey-arc/sdk": "workspace:*",
+    "zod": "4.1.12"
+  }
+}

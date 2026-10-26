@@ -1,0 +1,21 @@
+{
+  "name": "@twokey-arc/executor",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/main.ts"
+  },
+  "dependencies": {
+    "@twokey-arc/circle": "workspace:*",
+    "@twokey-arc/core": "workspace:*",
+    "@twokey-arc/db": "workspace:*",
+    "@twokey-arc/money": "workspace:*",
+    "@twokey-arc/telegram": "workspace:*",
+    "drizzle-orm": "0.44.7",
+    "pg-boss": "12.38.0",
+    "pino": "10.1.0",
+    "tsx": "4.19.4",
+    "@twokey-arc/policy": "workspace:*"
+  }
+}

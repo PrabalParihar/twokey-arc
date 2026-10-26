@@ -1,0 +1,7 @@
+{
+  "name": "@twokey-arc/demo-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": { "@twokey-arc/sdk": "workspace:*" }
+}

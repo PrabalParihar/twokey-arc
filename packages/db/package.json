@@ -1,0 +1,24 @@
+{
+  "name": "@twokey-arc/db",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "dependencies": {
+    "drizzle-orm": "0.44.7",
+    "pg": "8.23.1"
+  },
+  "devDependencies": {
+    "drizzle-kit": "0.31.5",
+    "@types/pg": "8.15.5"
+  },
+  "scripts": {
+    "generate": "drizzle-kit generate",
+    "custom": "drizzle-kit generate --custom"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./migrator": "./src/migrator.ts"
+  }
+}

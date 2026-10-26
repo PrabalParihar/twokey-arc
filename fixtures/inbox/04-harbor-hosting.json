@@ -1,0 +1,8 @@
+{
+  "id": "HC-2210",
+  "from": "invoices@harborcloud.example",
+  "subject": "Harbor Cloud hosting, Q4 upgrade",
+  "body": "Your Q4 hosting upgrade invoice HC-2210 is USDC 0.60. Pay to your saved Harbor Cloud wallet.",
+  "extracted": { "payee_id": "pay_harbor", "payee_name": "Harbor Cloud", "amount": "0.60", "memo": "HC-2210" },
+  "expect": "pending_approval"
+}

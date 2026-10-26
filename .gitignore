@@ -1,0 +1,17 @@
+node_modules
+.next
+dist
+coverage
+.turbo
+.env
+.env.*
+!.env.example
+*.pem
+*-recovery-file.json
+recovery_file*
+*.log
+.DS_Store
+docs/screenshots/*.tmp.png
+.claude/
+*.tsbuildinfo
+next-env.d.ts.bak

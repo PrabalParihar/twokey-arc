@@ -1,0 +1,23 @@
+{
+  "name": "@twokey-arc/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "dependencies": {
+    "@twokey-arc/db": "workspace:*",
+    "@twokey-arc/policy": "workspace:*",
+    "@twokey-arc/seal": "workspace:*",
+    "@twokey-arc/money": "workspace:*",
+    "@twokey-arc/contracts": "workspace:*",
+    "drizzle-orm": "0.44.7",
+    "pg": "8.23.1",
+    "pg-boss": "12.38.0",
+    "uuid": "13.0.0"
+  },
+  "devDependencies": {
+    "@testcontainers/postgresql": "11.14.0",
+    "@types/pg": "8.15.5"
+  }
+}

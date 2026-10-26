@@ -1,0 +1,8 @@
+{
+  "id": "INV-88213",
+  "from": "billing@oceanicfreight.example",
+  "subject": "Invoice INV-88213: October freight",
+  "body": "Hi, please find invoice INV-88213 for October freight, USDC 0.25, payable to our usual wallet. Thanks, Oceanic Freight AP",
+  "extracted": { "payee_id": "pay_oceanic", "payee_name": "Oceanic Freight", "amount": "0.25", "memo": "INV-88213" },
+  "expect": "executed"
+}
