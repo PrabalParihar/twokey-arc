@@ -1,13 +1,15 @@
 # Runbook
 
-## Deploy on Railway (workspace "WIT Labs")
-The project `twokey-arc` has three services from this repo:
+## Deploy on Railway (workspace "WIT Labs", project `twokey-arc`)
+Railway has deprecated config-as-code, so each service's settings are set on the service instance (set once through `railway api` `serviceInstanceUpdate`):
 
-| Service | Config file | Notes |
-|---|---|---|
-| `web` | `apps/web/railway.json` | Public domain. `/healthz`. **No Circle variables.** |
-| `executor` | `apps/executor/railway.json` | No public domain. `/healthz` only. Runs DB migrations on boot. |
-| `Postgres` | Railway plugin | `DATABASE_URL` referenced by both services |
+| Service | Build | Start | Health |
+|---|---|---|---|
+| `web` (twokey.si, www.twokey.si) | `pnpm install --frozen-lockfile && pnpm --filter @twokey-arc/web build` | `pnpm --filter @twokey-arc/web start` (`PORT=3000`) | `/healthz` |
+| `executor` (no public domain) | `pnpm install --frozen-lockfile` | `pnpm --filter @twokey-arc/executor start` | `/healthz` |
+| `Postgres` | Railway database | | |
+
+Both app services deploy from `PrabalParihar/twokey-arc@main`, with `DATABASE_URL=${{Postgres.DATABASE_URL}}`. The executor runs migrations on boot.
 
 Variables (names only; values come from your local `.env`):
 - **executor:**
