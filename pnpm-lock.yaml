@@ -38,6 +38,9 @@ importers:
       '@twokey-arc/seal':
         specifier: workspace:*
         version: link:packages/seal
+      '@twokey-arc/telegram':
+        specifier: workspace:*
+        version: link:packages/telegram
       '@types/node':
         specifier: 24.0.3
         version: 24.0.3
@@ -56,6 +59,9 @@ importers:
       pg:
         specifier: 8.23.1
         version: 8.23.1
+      playwright-core:
+        specifier: 1.54.2
+        version: 1.54.2
       tsx:
         specifier: 4.19.4
         version: 4.19.4
@@ -2337,6 +2343,11 @@ packages:
     resolution: {integrity: sha512-wQ0b/W4Fr01qtpHlqSqspcj3EhBvimsdh0KlHhH8HRZnMsEa0ea2fTULOXOS9ccQr3om+GcGRk4e+isrZWV8qQ==}
     engines: {node: '>=16.20.0'}
 
+  playwright-core@1.54.2:
+    resolution: {integrity: sha512-n5r4HFbMmWsB4twG7tJLDN9gmBUeSPcsBZiWSE4DnYz9mJMAFqr2ID7+eGC9kpEnxExJ1epttwR59LEWCk8mtA==}
+    engines: {node: '>=18'}
+    hasBin: true
+
   postcss@8.4.31:
     resolution: {integrity: sha512-PS08Iboia9mts/2ygV3eLpY5ghnUcfLV/EXTOW1E2qYxJKGGBUtNjN76FYHnMs36RmARn41bC0AZmn+rR0OVpQ==}
     engines: {node: ^10 || ^12 || >=14}
@@ -4592,6 +4603,8 @@ snapshots:
       thread-stream: 3.2.0
 
   pkce-challenge@5.0.1: {}
+
+  playwright-core@1.54.2: {}
 
   postcss@8.4.31:
     dependencies:
