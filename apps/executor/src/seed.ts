@@ -9,7 +9,8 @@ import type { loadConfig } from './config';
 const WALLETS = resolve(import.meta.dirname, '../../../config/wallets.arc-testnet.json');
 
 /**
- * SEED_MANDATE_ON_BOOT=true: if the org has no active mandate yet, sign and activate the demo mandate
+ * SEED_MANDATE_ON_BOOT=true: if the org has no active mandate yet (or its Telegram setting differs from
+ * this deployment's), sign and activate the demo mandate
  * (scaled-down limits) with payees pinned to the wallets in config/wallets.arc-testnet.json.
  * Mandate only: agent keys are issued by the owner from the dashboard.
  */
@@ -22,7 +23,11 @@ export async function seedMandateIfMissing(conf: ReturnType<typeof loadConfig>, 
   const { db, pool } = createDb(conf.databaseUrl, 1);
   try {
     await migrateDb(db);
-    if (await getActiveMandate(db, conf.cfg.orgId)) return;
+    const active = await getActiveMandate(db, conf.cfg.orgId);
+    const wantTelegram = !!conf.telegram;
+    if (active && active.approval.telegram === wantTelegram) return;
+    // Demo deployment only: when Telegram is configured after the first seed, re-sign the same limits and
+    // payees with the channel switched, as the next version (audited like any mandate change).
     const now = new Date();
     const doc = buildMandate(
       {
@@ -38,14 +43,14 @@ export async function seedMandateIfMissing(conf: ReturnType<typeof loadConfig>, 
         ],
         validFrom: new Date(now.getTime() - 60_000),
         expiresAt: new Date(now.getTime() + 30 * 86_400_000),
-        approval: { ttl_minutes: 15, telegram: !!conf.telegram },
+        approval: { ttl_minutes: 15, telegram: wantTelegram },
         signedBy: process.env.OWNER_NAME ?? 'Prabal',
       },
-      1,
+      (active?.version ?? 0) + 1,
       now,
     );
     await db.transaction((tx) => activateMandate(tx, conf.cfg.orgId, doc, { type: 'system', id: 'seed-on-boot' }, now));
-    log.info({ version: doc.version }, 'mandate seeded on boot');
+    log.info({ version: doc.version, telegram: wantTelegram }, 'mandate seeded on boot');
   } finally {
     await pool.end();
   }
