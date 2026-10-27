@@ -49,7 +49,7 @@ export function ApprovalActions({ approvalId, paymentId, seal, csrf }: { approva
   const router = useRouter();
   const path = usePathname();
   // On Today, pin the panel to this payment; otherwise it would jump to the next one waiting.
-  const stay = () => (path === '/' ? router.replace(`/?id=${paymentId}`) : router.refresh());
+  const stay = () => (path === '/app' ? router.replace(`/app?id=${paymentId}`) : router.refresh());
   const btn = useRef<HTMLButtonElement>(null);
   const [status, setStatus] = useState('');
   const [busy, setBusy] = useState(false);
@@ -223,7 +223,7 @@ export function LoginForm() {
         setBusy(true);
         const f = new FormData(e.currentTarget);
         const res = await fetch('/api/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: f.get('email'), password: f.get('password') }) });
-        if (res.ok) router.replace('/');
+        if (res.ok) router.replace('/app');
         else {
           setErr('Email or password is wrong.');
           setBusy(false);

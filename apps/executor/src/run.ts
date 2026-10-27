@@ -1,7 +1,7 @@
 import { createServer } from 'node:http';
 import type { Logger } from 'pino';
 import type { CircleClient } from '@twokey-arc/circle';
-import { bossJobs, expireApprovals, reconcileAttempt, refreshBalance, startBoss, sweep, type CirclePort, type ExecutorDeps, type JobName } from '@twokey-arc/core';
+import { bossJobs, expireApprovals, queueName, reconcileAttempt, refreshBalance, startBoss, sweep, type CirclePort, type ExecutorDeps, type JobName } from '@twokey-arc/core';
 import { createDb } from '@twokey-arc/db';
 import { migrateDb } from '@twokey-arc/db/migrator';
 import type { loadConfig } from './config';
@@ -17,12 +17,12 @@ import { handleWebhook } from './jobs/process-webhook';
 export async function runExecutor(conf: ReturnType<typeof loadConfig>, circle: CirclePort, log: Logger, client?: CircleClient) {
   const { db, pool } = createDb(conf.databaseUrl, 10);
   await migrateDb(db);
-  const boss = await startBoss(conf.databaseUrl, 'executor');
-  const deps: ExecutorDeps = { db, cfg: conf.cfg, jobs: bossJobs(boss), circle };
+  const boss = await startBoss(conf.databaseUrl, 'executor', [conf.cfg.orgId]);
+  const deps: ExecutorDeps = { db, cfg: conf.cfg, jobs: bossJobs(boss, conf.cfg.orgId), circle };
 
   type Data = Record<string, string>;
   const work = (name: JobName, fn: (data: Data) => Promise<unknown>, localConcurrency = 4) =>
-    boss.work<Data>(name, { batchSize: 1, localConcurrency, pollingIntervalSeconds: 0.5 }, async ([job]) => {
+    boss.work<Data>(queueName(conf.cfg.orgId, name), { batchSize: 1, localConcurrency, pollingIntervalSeconds: 0.5 }, async ([job]) => {
       try {
         await fn(job!.data);
       } catch (err) {

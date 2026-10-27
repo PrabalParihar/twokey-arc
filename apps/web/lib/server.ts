@@ -1,6 +1,7 @@
 import 'server-only';
 import { eq } from 'drizzle-orm';
-import { bossJobs, startBoss, type CoreConfig, type CoreDeps, type Jobs } from '@twokey-arc/core';
+import type { PgBoss } from 'pg-boss';
+import { bossJobs, startBoss, type CoreConfig, type CoreDeps } from '@twokey-arc/core';
 import { createDb, users, type Db } from '@twokey-arc/db';
 import { assertNoCircleSecrets } from './boot';
 import { ARC_EXPLORER } from './explorer';
@@ -20,16 +21,20 @@ export const cfg: CoreConfig = {
 
 export const OWNER_NAME = process.env.OWNER_NAME ?? 'Prabal';
 
-type State = { db: Db; jobs: Promise<Jobs>; ownerReady: Promise<void> };
+/** The public demo runs in its own org, with its own Circle wallet and executor. Off unless PUBLIC_DEMO=true. */
+export const DEMO_ENABLED = process.env.PUBLIC_DEMO === 'true';
+export const demoCfg: CoreConfig = { ...cfg, orgId: process.env.DEMO_ORG_ID ?? 'org_demo', demoMode: true, approvalGraceSeconds: 6 };
+
+type State = { db: Db; boss: Promise<PgBoss>; ownerReady: Promise<void> };
 const g = globalThis as unknown as { __twokey?: State };
 
 function init(): State {
   const url = process.env.DATABASE_URL_WEB ?? process.env.DATABASE_URL;
   if (!url) throw new Error('DATABASE_URL is not set');
   const { db } = createDb(url, 10);
-  const jobs = startBoss(url, 'web').then(bossJobs);
-  jobs.catch((e: Error) => console.error('pg-boss (web) failed to start:', e.message));
-  return { db, jobs, ownerReady: ensureOwner(db) };
+  const boss = startBoss(url, 'web', DEMO_ENABLED ? [cfg.orgId, demoCfg.orgId] : [cfg.orgId]);
+  boss.catch((e: Error) => console.error('pg-boss (web) failed to start:', e.message));
+  return { db, boss, ownerReady: ensureOwner(db) };
 }
 
 /** Upserts the single owner from OWNER_EMAIL + OWNER_PASSWORD_HASH (argon2id), so a fresh deploy can log in. */
@@ -53,7 +58,7 @@ function state(): State {
 export const db = (): Db => state().db;
 export const ownerReady = () => state().ownerReady;
 
-export async function deps(): Promise<CoreDeps> {
+export async function deps(config: CoreConfig = cfg): Promise<CoreDeps> {
   const s = state();
-  return { db: s.db, cfg, jobs: await s.jobs };
+  return { db: s.db, cfg: config, jobs: bossJobs(await s.boss, config.orgId) };
 }

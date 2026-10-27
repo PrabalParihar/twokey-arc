@@ -8,6 +8,8 @@ export interface WalletsFile {
   createdAt: string;
   treasury: { id: string; address: string };
   payees: { oceanic: { id: string; address: string }; harbor: { id: string; address: string }; brightline: { id: string; address: string } };
+  /** Separate treasury for the public demo (org_demo), so visitors never spend from the main one. */
+  demoTreasury?: { id: string; address: string };
 }
 
 export const WALLETS_PATH = process.env.TWOKEY_WALLETS_FILE ?? resolve(import.meta.dirname, '../../config/wallets.arc-testnet.json');

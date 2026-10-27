@@ -27,7 +27,7 @@ export default async function ConsoleLayout({ children }: { children: React.Reac
   return (
     <div className="app">
       <header className="bar">
-        <Link href="/" className="brand">
+        <Link href="/app" className="brand">
           <Mark /> Twokey
         </Link>
         <div className="crumb">

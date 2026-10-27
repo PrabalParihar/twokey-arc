@@ -53,7 +53,7 @@ export async function sendApprovalRequest(
   i: { token: string; chatId: string; appBaseUrl: string; maxApproveUsdc: string },
   c: ApprovalCard,
 ): Promise<number> {
-  const open = { text: 'Open', url: `${i.appBaseUrl.replace(/\/$/, '')}/approvals/${c.approvalId}` };
+  const open = { text: 'Open', url: `${i.appBaseUrl.replace(/\/$/, '')}/app/approvals/${c.approvalId}` };
   const canApproveHere = parseUsdc(c.amount) <= parseUsdc(i.maxApproveUsdc);
   const keyboard = canApproveHere
     ? [[{ text: 'Approve', callback_data: callbackData('a', c.approvalId, c.seal) }, { text: 'Reject', callback_data: callbackData('r', c.approvalId, c.seal) }, open]]

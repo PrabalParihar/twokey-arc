@@ -9,16 +9,16 @@ export function NavLinks({ pending }: { pending: number }) {
   const on = (cond: boolean) => `nav-i${cond ? ' on' : ''}`;
   return (
     <>
-      <Link className={on(path === '/' && view !== 'pending')} href="/" aria-current={path === '/' && view !== 'pending' ? 'page' : undefined}>
+      <Link className={on(path === '/app' && view !== 'pending')} href="/app" aria-current={path === '/app' && view !== 'pending' ? 'page' : undefined}>
         Today
       </Link>
-      <Link className={on((path === '/' && view === 'pending') || path.startsWith('/approvals'))} href="/?view=pending">
+      <Link className={on((path === '/app' && view === 'pending') || path.startsWith('/app/approvals'))} href="/app?view=pending">
         Needs you {pending > 0 && <em aria-label={`${pending} waiting`}>{pending}</em>}
       </Link>
-      <Link className={on(path === '/mandate')} href="/mandate">
+      <Link className={on(path === '/app/mandate')} href="/app/mandate">
         Mandate
       </Link>
-      <Link className={on(path === '/audit')} href="/audit">
+      <Link className={on(path === '/app/audit')} href="/app/audit">
         Audit
       </Link>
     </>

@@ -19,5 +19,9 @@
       "id": "538fc266-154c-5ffb-b211-b57cf357d44c",
       "address": "0x8569462fa82f8e9ecbfaf6227bbf383d2c8a9b92"
     }
+  },
+  "demoTreasury": {
+    "id": "78bfe0ea-363f-5bd4-b1ed-c779befa68cf",
+    "address": "0xb78d23d8a7b57cd7dabd1ea5eeda8a2859478251"
   }
 }

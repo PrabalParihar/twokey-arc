@@ -36,7 +36,7 @@ export default async function Today({ searchParams }: { searchParams: Promise<{ 
           {rows.length === 0 && <li className="empty">No payment requests yet. Run the demo agent: pnpm demo:agent</li>}
           {rows.map(({ intent: i, attempt }) => {
             const chip = statusChip(i.status);
-            const href = `/?${new URLSearchParams({ ...(pendingOnly ? { view: 'pending' } : {}), id: i.id })}`;
+            const href = `/app?${new URLSearchParams({ ...(pendingOnly ? { view: 'pending' } : {}), id: i.id })}`;
             return (
               <li key={i.id} className={`row${selected?.intent.id === i.id ? ' sel' : ''}`}>
                 <time dateTime={i.createdAt.toISOString()}>{timeIst(i.createdAt)}</time>

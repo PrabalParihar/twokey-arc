@@ -172,13 +172,13 @@ export function PaymentDetail(props: {
       {props.demoMode && a && (a.status === 'PENDING' || a.status === 'APPROVED') && <DriftButton paymentId={i.id} csrf={props.csrf} />}
       {!pendingApproval && a && terms && i.status === 'AWAITING_APPROVAL' && (
         <p className="hint">
-          <Link href={`/approvals/${a.id}`}>Open the approval</Link>
+          <Link href={`/app/approvals/${a.id}`}>Open the approval</Link>
         </p>
       )}
 
       <div className="d-sec">
         <span>Record</span>
-        <Link className="hint" href="/audit">
+        <Link className="hint" href="/app/audit">
           Audit log →
         </Link>
       </div>
