@@ -1,0 +1,45 @@
+{
+  "run": "20261027115201",
+  "url": "http://localhost:3000",
+  "ok": true,
+  "results": [
+    {
+      "step": "1 inside the mandate: Oceanic 0.25 runs on its own and is final on Arc",
+      "ok": true,
+      "detail": "PAID in 4.1 s · block 69326395",
+      "txHash": "0xc95fa37825795165d49dd8cef7574ec0d50fdcb2230f97fbc40364ba6e22c92e",
+      "ms": 4140
+    },
+    {
+      "step": "2 outside the mandate: Brightline 0.75 waits for the second key, then pays",
+      "ok": true,
+      "detail": "stale seal 409, approved seal → PAID",
+      "txHash": "0xf7989948d1777318fb810d8ddccae1ef6b286bb242fa0c4e03ebdb36940bd292"
+    },
+    {
+      "step": "3 breaks a rule: \"Oceanic\" at a new address is blocked, no Circle call",
+      "ok": true,
+      "detail": "blocked · INV-PAYEE-PINNED"
+    },
+    {
+      "step": "4 drift: Harbor 0.60 approved, amount changed by 0.50, approval void, nothing sent",
+      "ok": true,
+      "detail": "amount 0.600000 → 1.100000 · VOIDED · no Circle call"
+    },
+    {
+      "step": "5 idempotency: INV-88213 retried with the same key returns the same payment",
+      "ok": true,
+      "detail": "same paymentId pi_01a17d33fc9771ee95b32b80a10523b5"
+    },
+    {
+      "step": "6 audit: chain verifies and each paid payment has its Circle tx id and Arc tx hash",
+      "ok": true,
+      "detail": "chain ok · 90 entries"
+    },
+    {
+      "step": "7 balance: treasury dropped by exactly the amounts paid plus their USDC gas",
+      "ok": true,
+      "detail": "17.892162 → 16.889194 · delta 1.002968 (amounts + fees 1.002969, fee rounding)"
+    }
+  ]
+}

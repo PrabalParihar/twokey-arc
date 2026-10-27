@@ -1,6 +1,6 @@
 // Signs and activates the demo mandate (scaled-down amounts, PRD Appendix A) with payees pinned to the
 // Circle wallets circle-setup created, and issues the demo agent's key into .env.
-// Usage: pnpm seed [--rotate-agent-key]
+// Usage: pnpm seed [--rotate-agent-key] [--agent-key-env NAME]   (default NAME: TWOKEY_AGENT_KEY)
 import { randomBytes } from 'node:crypto';
 import { eq } from 'drizzle-orm';
 import { activateMandate, buildMandate, createAgent, getActiveMandate } from '@twokey-arc/core';
@@ -57,8 +57,10 @@ const [existing] = await db.select().from(agents).where(eq(agents.agentId, 'ap-a
 if (!existing || process.argv.includes('--rotate-agent-key')) {
   if (existing) await db.update(agents).set({ status: 'REVOKED', agentId: `ap-agent-revoked-${Date.now()}` }).where(eq(agents.id, existing.id));
   const { apiKey } = await createAgent(db, { orgId: ORG, agentId: 'ap-agent', name: 'Accounts payable agent', pepper });
-  upsertEnv('TWOKEY_AGENT_KEY', apiKey);
-  console.log('agent ap-agent: key written to .env as TWOKEY_AGENT_KEY');
+  const i = process.argv.indexOf('--agent-key-env');
+  const keyName = i > 0 ? process.argv[i + 1]! : 'TWOKEY_AGENT_KEY';
+  upsertEnv(keyName, apiKey);
+  console.log(`agent ap-agent: key written to .env as ${keyName}`);
 } else {
   console.log('agent ap-agent already exists (use --rotate-agent-key for a new key)');
 }

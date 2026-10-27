@@ -232,6 +232,18 @@ describe('audit log', () => {
     expect(await cause(h.db.execute(sql`delete from audit_log where seq = 1`))).toMatch(/append-only/);
   });
 
+  it('keeps one chain per org: two orgs in one database each start at seq 1', async () => {
+    const { appendAudit } = await import('../src');
+    const now = h.clock.now();
+    await h.db.transaction((tx) =>
+      appendAudit(tx, 'org_other', { at: now, actorType: 'system', actorId: 't', verb: 'x.one', subjectType: 's', subjectId: '1', data: {} }),
+    );
+    await pay({ payee: { payeeId: 'pay_oceanic' }, amount: '1.00' });
+    expect((await listAudit(h.db, 'org_other'))[0]?.seq).toBe(1);
+    expect(await verifyAudit(h.db, 'org_other')).toMatchObject({ ok: true, length: 1 });
+    expect(await verifyAudit(h.db, ORG)).toMatchObject({ ok: true });
+  });
+
   it('reports the first broken row when one is edited (scratch copy, trigger disabled)', async () => {
     await pay({ payee: { payeeId: 'pay_oceanic' }, amount: '1.00' });
     await h.drain();

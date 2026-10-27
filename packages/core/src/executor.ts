@@ -35,7 +35,7 @@ export interface CirclePort {
     refId: string;
   }): Promise<{ id: string; state: string }>;
   getTransaction(id: string): Promise<CircleTx>;
-  listTransactions(i: { walletId: string; destinationAddress: string; from: Date }): Promise<CircleTx[]>;
+  listTransactions(i: { walletId: string; destinationAddress: string; from: Date; amount?: string }): Promise<CircleTx[]>;
 }
 
 /** `rejected`: Circle refused the request (4xx); safe to fail. `ambiguous`: it may or may not exist. */
@@ -301,7 +301,7 @@ export async function reconcileAttempt(deps: ExecutorDeps, attemptId: string): P
   const since = new Date((att.submittedAt ?? att.createdAt).getTime() - 60_000);
   const now = nowOf(deps);
 
-  const txs = await circle.listTransactions({ walletId: mandate!.source_wallet.circle_wallet_id, destinationAddress: intent!.destinationAddress!, from: since });
+  const txs = await circle.listTransactions({ walletId: mandate!.source_wallet.circle_wallet_id, destinationAddress: intent!.destinationAddress!, from: since, amount: toUsdc6(intent!.amount) });
   const match = txs.find((t) => t.refId === intent!.id && (!t.amounts?.[0] || compareUsdc(toUsdc6(t.amounts[0]), toUsdc6(intent!.amount)) === 0));
   if (match) {
     await db.transaction(async (t) => {

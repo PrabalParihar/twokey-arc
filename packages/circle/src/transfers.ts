@@ -4,6 +4,8 @@ import { decimalToUsdc6 } from './units';
 
 export interface TransferRequest {
   walletId: string;
+  /** Circle blockchain id ('ARC-TESTNET'). The API requires it next to tokenAddress, though the SDK types mark it optional. */
+  blockchain: string;
   tokenAddress: string;
   destinationAddress: string;
   /** 6-dp USDC string, e.g. "0.250000". */
@@ -42,6 +44,7 @@ export async function createUsdcTransfer(client: CircleClient, r: TransferReques
     const res = await client.createTransaction({
       walletId: r.walletId,
       tokenAddress: r.tokenAddress,
+      blockchain: r.blockchain as never,
       destinationAddress: r.destinationAddress,
       amount: [r.amount],
       fee: { type: 'level', config: { feeLevel: 'MEDIUM' } },
@@ -98,30 +101,36 @@ export async function getTransfer(client: CircleClient, id: string): Promise<Tra
   }
 }
 
-/** For reconciliation: our wallet's transfers to one address since `from`. */
+/**
+ * For reconciliation: our wallet's transfers to one address since `from`, optionally of one amount.
+ * The list endpoint omits `refId`, so each candidate is re-read with getTransaction, which carries it.
+ */
 export async function listTransfers(
   client: CircleClient,
-  i: { walletId: string; destinationAddress: string; from: Date; blockchain: string },
+  i: { walletId: string; destinationAddress: string; from: Date; amount?: string },
 ): Promise<TransferStatus[]> {
-  // Filter the destination locally, case-insensitively: addresses may come back checksummed.
+  // The API refuses `blockchain` together with `walletIds` (the wallet already fixes the chain).
   const res = await client.listTransactions({
     walletIds: [i.walletId],
     from: i.from.toISOString(),
-    blockchain: i.blockchain as never,
     pageSize: 50,
   });
+  // Filter locally and case-insensitively: addresses may come back checksummed, amounts unpadded.
   const dest = i.destinationAddress.toLowerCase();
-  return (res.data?.transactions ?? []).filter((t) => t.destinationAddress?.toLowerCase() === dest).map(toStatus);
+  const sameAmount = (a?: string[]) => !i.amount || !a?.[0] || Number(a[0]) === Number(i.amount);
+  const candidates = (res.data?.transactions ?? []).filter((t) => t.destinationAddress?.toLowerCase() === dest && sameAmount(t.amounts));
+  return Promise.all(candidates.map((t) => getTransfer(client, t.id)));
 }
 
 /** Medium-level fee estimate for a USDC transfer, converted to the 6-dp view and rounded up. */
 export async function estimateUsdcTransferFee(
   client: CircleClient,
-  i: { walletId: string; tokenAddress: string; destinationAddress: string; amount: string },
+  i: { walletId: string; tokenAddress: string; blockchain: string; destinationAddress: string; amount: string },
 ): Promise<string | null> {
   const res = await client.estimateTransferFee({
     walletId: i.walletId,
     tokenAddress: i.tokenAddress,
+    blockchain: i.blockchain as never,
     destinationAddress: i.destinationAddress,
     amount: [i.amount],
   });

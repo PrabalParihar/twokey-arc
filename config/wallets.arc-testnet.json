@@ -1,0 +1,23 @@
+{
+  "network": "ARC-TESTNET",
+  "walletSetId": "3ca5bcaa-260c-5e2d-8ac1-9d0c4c5954b2",
+  "createdAt": "2026-10-27T11:47:35.744Z",
+  "treasury": {
+    "id": "250140cd-d6a1-5df9-8aa2-e3261b033035",
+    "address": "0xcdb07ea35f4b3cb6bc4fea4e0154059d3a151897"
+  },
+  "payees": {
+    "oceanic": {
+      "id": "7f31a061-f724-5861-8638-a933eb94af05",
+      "address": "0xae403e2c24b6a808cab4936d26c6394351cbf3d0"
+    },
+    "harbor": {
+      "id": "56cad6b8-3a35-5de6-a420-3d8860707209",
+      "address": "0x6043da8fd6924c04e249347f4e52c438200135d6"
+    },
+    "brightline": {
+      "id": "538fc266-154c-5ffb-b211-b57cf357d44c",
+      "address": "0x8569462fa82f8e9ecbfaf6227bbf383d2c8a9b92"
+    }
+  }
+}

@@ -132,7 +132,7 @@ const request = (idem: string) =>
 async function verify(intentId: string, label: string) {
   const [i] = await db.select().from(paymentIntents).where(eq(paymentIntents.id, intentId));
   const since = new Date(i!.createdAt.getTime() - 120_000);
-  let txs = await real.listTransactions({ walletId: w!.treasury.id, destinationAddress: w!.payees.oceanic.address, from: since });
+  let txs = await real.listTransactions({ walletId: w!.treasury.id, destinationAddress: w!.payees.oceanic.address, from: since, amount: AMOUNT });
   txs = txs.filter((t) => t.refId === intentId);
   const ok = i!.status === 'PAID' && txs.length === 1;
   console.log(`${ok ? '✓' : '✗'} ${label.padEnd(12)} ${intentId} · ${i!.status} · Circle transfers for refId: ${txs.length}${txs[0]?.txHash ? ` · ${txs[0].txHash}` : ''}`);

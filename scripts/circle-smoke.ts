@@ -14,6 +14,7 @@ const t0 = Date.now();
 const { id } = await createUsdcTransfer(circle, {
   walletId: w.treasury.id,
   tokenAddress: net.usdc,
+  blockchain: net.circleBlockchain,
   destinationAddress: w.payees.oceanic.address,
   amount: '0.100000',
   idempotencyKey: randomUUID(),

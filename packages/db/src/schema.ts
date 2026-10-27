@@ -7,6 +7,7 @@ import {
   jsonb,
   numeric,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
@@ -160,8 +161,9 @@ export const balanceSnapshots = pgTable(
   (t) => [index('balance_wallet_taken').on(t.walletId, t.takenAt.desc())],
 );
 
+// The hash chain is per org, so seq is unique per org: the key is (org_id, seq).
 export const auditLog = pgTable('audit_log', {
-  seq: bigint('seq', { mode: 'number' }).primaryKey(),
+  seq: bigint('seq', { mode: 'number' }).notNull(),
   orgId: text('org_id').notNull(),
   at: ts('at').notNull(),
   actorType: text('actor_type', { enum: ['agent', 'user', 'system', 'circle'] }).notNull(),
@@ -172,7 +174,7 @@ export const auditLog = pgTable('audit_log', {
   data: jsonb('data').notNull(),
   prevHash: text('prev_hash').notNull(),
   entryHash: text('entry_hash').notNull().unique(),
-});
+}, (t) => [primaryKey({ columns: [t.orgId, t.seq] })]);
 
 export const webhookEvents = pgTable('webhook_events', {
   notificationId: text('notification_id').primaryKey(),

@@ -18,9 +18,9 @@ export function circlePort(client: CircleClient, net: ArcNetwork): CirclePort {
   };
   return {
     getUsdcBalance: (walletId) => getUsdcBalance(client, walletId, net.usdc),
-    estimateTransferFee: (i) => estimateUsdcTransferFee(client, { ...i, tokenAddress: net.usdc }),
-    createTransfer: (i) => createUsdcTransfer(client, i).catch(mapErr),
+    estimateTransferFee: (i) => estimateUsdcTransferFee(client, { ...i, tokenAddress: net.usdc, blockchain: net.circleBlockchain }),
+    createTransfer: (i) => createUsdcTransfer(client, { ...i, blockchain: net.circleBlockchain }).catch(mapErr),
     getTransaction: (id) => getTransfer(client, id).catch(mapErr),
-    listTransactions: (i) => listTransfers(client, { ...i, blockchain: net.circleBlockchain }),
+    listTransactions: (i) => listTransfers(client, i),
   };
 }
