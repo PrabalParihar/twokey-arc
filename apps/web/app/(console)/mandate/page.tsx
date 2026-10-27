@@ -1,5 +1,5 @@
 import { getActiveMandate, latestBalance } from '@twokey-arc/core';
-import { CopyButton } from '@/components/client';
+import { CopyButton, IssueAgentKey } from '@/components/client';
 import { dateTimeIst, displayUsdc, sealGroups, shortAddr } from '@/lib/format';
 import { explorerAddress } from '@/lib/explorer';
 import { cfg, db } from '@/lib/server';
@@ -8,7 +8,7 @@ import { pageOwner } from '@/lib/session';
 export const dynamic = 'force-dynamic';
 
 export default async function MandatePage() {
-  await pageOwner();
+  const { csrf } = await pageOwner();
   const m = await getActiveMandate(db(), cfg.orgId);
   if (!m) {
     return (
@@ -95,6 +95,7 @@ export default async function MandatePage() {
           A known payee at any other address is blocked (INV-PAYEE-PINNED). Tightening a limit applies at once; loosening one, adding a payee or changing an
           address needs an approval. Approvals wait {m.approval.ttl_minutes} min{m.approval.telegram ? ' and are also sent to Telegram' : ''}.
         </p>
+        <IssueAgentKey csrf={csrf} />
       </div>
     </>
   );

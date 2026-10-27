@@ -166,3 +166,22 @@ describe('rate limit', () => {
     expect(codes.at(-1)).toBe(429);
   });
 });
+
+describe('agent keys are issued by the owner', () => {
+  it('rotates the key: the new one works, the old one stops, agents cannot issue keys', async () => {
+    const { POST: issue } = await import('../app/api/v1/agents/key/route');
+    jar.clear();
+    expect((await issue(req('POST', '/api/v1/agents/key', {}, { authorization: `Bearer ${h.agentKey}` }))).status).toBe(401);
+    const login = await routes.login.POST(req('POST', '/api/auth/login', { email: 'owner@twokey.test', password: 'correct horse battery' }));
+    const { csrf } = await login.json();
+    const r = await issue(req('POST', '/api/v1/agents/key', {}, { 'x-csrf-token': csrf }));
+    expect(r.status).toBe(200);
+    const { apiKey } = await r.json();
+    expect(apiKey).toMatch(/^tk_agent_/);
+    const body = { payee: { payeeId: 'pay_oceanic' }, amount: '0.01' };
+    const old = await routes.payments.POST(req('POST', '/api/v1/payments', body, { authorization: `Bearer ${h.agentKey}`, 'idempotency-key': 'inv-old-key-1' }));
+    expect(old.status).toBe(401);
+    const fresh = await routes.payments.POST(req('POST', '/api/v1/payments', body, { authorization: `Bearer ${apiKey}`, 'idempotency-key': 'inv-new-key-1' }));
+    expect(fresh.status).toBe(202);
+  });
+});

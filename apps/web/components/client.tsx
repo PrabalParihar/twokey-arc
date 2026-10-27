@@ -265,3 +265,45 @@ export function SignOut({ csrf }: { csrf: string }) {
     </button>
   );
 }
+
+/** Owner issues (or rotates) the agent key. It is shown once, here, and never again. */
+export function IssueAgentKey({ csrf }: { csrf: string }) {
+  const [key, setKey] = useState('');
+  const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
+  return (
+    <div className="panel" style={{ marginTop: 16 }}>
+      <h3>Agent key (accounts payable agent)</h3>
+      {key ? (
+        <>
+          <p>Copy it now: it won&apos;t be shown again. The previous key no longer works.</p>
+          <p className="mono" style={{ color: 'var(--text)', overflowWrap: 'anywhere', margin: '8px 0' }}>{key}</p>
+          <CopyButton text={key} />
+        </>
+      ) : (
+        <>
+          <p>Issuing a new key revokes the old one. The agent can only request payments; it can never approve.</p>
+          <button
+            type="button"
+            className="btn btn-dark btn-sm"
+            style={{ marginTop: 10 }}
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              try {
+                const r = (await post('/api/v1/agents/key', csrf, {})) as unknown as { apiKey: string };
+                setKey(r.apiKey);
+              } catch (e) {
+                setErr((e as Error).message);
+              }
+              setBusy(false);
+            }}
+          >
+            Issue agent key
+          </button>
+          {err && <p className="err">{err}</p>}
+        </>
+      )}
+    </div>
+  );
+}

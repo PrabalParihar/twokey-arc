@@ -1,7 +1,8 @@
 import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { and, eq, gt, isNull } from 'drizzle-orm';
-import { agents, sessions, users, type DbOrTx } from '@twokey-arc/db';
+import { agents, sessions, users, type Db, type DbOrTx } from '@twokey-arc/db';
 import { newId } from './base';
+import { appendAudit } from './audit';
 
 /** Agent keys are stored as HMAC-SHA-256(pepper, key), never in clear. */
 export const hashAgentKey = (pepper: string, key: string): string => createHmac('sha256', pepper).update(key).digest('hex');
@@ -61,4 +62,27 @@ export function csrfOk(expected: string, provided: string | null | undefined): b
   const a = Buffer.from(expected);
   const b = Buffer.from(provided);
   return a.length === b.length && timingSafeEqual(a, b);
+}
+
+/**
+ * Issues a fresh key for an agent, revoking any key it had. The owner does this from the dashboard;
+ * the key is returned once and only its HMAC is stored.
+ */
+export async function issueAgentKey(
+  db: Db,
+  i: { orgId: string; agentId: string; name: string; pepper: string; by: string; now?: Date },
+): Promise<{ apiKey: string }> {
+  const now = i.now ?? new Date();
+  return db.transaction(async (tx) => {
+    const [existing] = await tx.select().from(agents).where(eq(agents.agentId, i.agentId));
+    if (existing) {
+      await tx.update(agents).set({ status: 'REVOKED', agentId: `${i.agentId}-revoked-${now.getTime()}` }).where(eq(agents.id, existing.id));
+    }
+    const created = await createAgent(tx, { orgId: i.orgId, agentId: i.agentId, name: i.name, pepper: i.pepper });
+    await appendAudit(tx, i.orgId, {
+      at: now, actorType: 'user', actorId: i.by, verb: 'agent.key_issued', subjectType: 'agent', subjectId: i.agentId,
+      data: { replaced_previous: !!existing },
+    });
+    return created;
+  });
 }
