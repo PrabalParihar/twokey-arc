@@ -32,12 +32,13 @@ function rateLimited(agentId: string, now = Date.now()): boolean {
   return recent.length > Number(process.env.AGENT_RATE_PER_MIN ?? 30);
 }
 
-export async function requireAgent(req: Request) {
+/** `limited` applies the 30/min budget: payment requests and cancels count, status reads don't. */
+export async function requireAgent(req: Request, opts: { limited?: boolean } = {}) {
   const pepper = process.env.AGENT_KEY_PEPPER;
   if (!pepper) throw new TwokeyError('misconfigured', 500, 'AGENT_KEY_PEPPER is not set');
   const agent = await authenticateAgent(db(), pepper, req.headers.get('authorization'));
   if (!agent) throw new TwokeyError('unauthorized', 401, 'a valid agent key is required');
-  if (rateLimited(agent.agentId)) throw new TwokeyError('rate_limited', 429, 'too many requests; 30 per minute per agent');
+  if (opts.limited && rateLimited(agent.agentId)) throw new TwokeyError('rate_limited', 429, 'too many requests; 30 per minute per agent');
   return agent;
 }
 

@@ -168,7 +168,7 @@ export function PaymentDetail(props: {
       {i.status === 'FAILED' && <div className="note block">Circle reported a failure. Not retried automatically.</div>}
       {i.status === 'NEEDS_HUMAN' && <div className="note wait">Circle&apos;s answer was unclear after retries with the same key. Check the treasury in the Circle console.</div>}
 
-      {pendingApproval && a && <ApprovalActions approvalId={a.id} seal={a.seal} csrf={props.csrf} />}
+      {pendingApproval && a && <ApprovalActions approvalId={a.id} paymentId={i.id} seal={a.seal} csrf={props.csrf} />}
       {props.demoMode && a && (a.status === 'PENDING' || a.status === 'APPROVED') && <DriftButton paymentId={i.id} csrf={props.csrf} />}
       {!pendingApproval && a && terms && i.status === 'AWAITING_APPROVAL' && (
         <p className="hint">

@@ -149,3 +149,20 @@ describe('webhooks', () => {
     expect(r.status).toBe(401);
   });
 });
+
+describe('rate limit', () => {
+  it('counts payment requests, not status reads', async () => {
+    const r = await routes.payments.POST(req('POST', '/api/v1/payments', { payee: { payeeId: 'pay_oceanic' }, amount: '0.01' }, agentHeaders()));
+    const { paymentId } = await r.json();
+    const { GET } = await import('../app/api/v1/payments/[id]/route');
+    for (let i = 0; i < 40; i++) {
+      const g = await GET(req('GET', `/api/v1/payments/${paymentId}`, undefined, { authorization: `Bearer ${h.agentKey}` }), ctx(paymentId));
+      expect(g.status).toBe(200);
+    }
+    process.env.AGENT_RATE_PER_MIN = '3';
+    const codes: number[] = [];
+    for (let i = 0; i < 4; i++) codes.push((await routes.payments.POST(req('POST', '/api/v1/payments', { payee: { payeeId: 'pay_oceanic' }, amount: '0.01' }, agentHeaders()))).status);
+    delete process.env.AGENT_RATE_PER_MIN;
+    expect(codes.at(-1)).toBe(429);
+  });
+});

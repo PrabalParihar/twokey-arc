@@ -19,3 +19,37 @@ Also found while building:
 
 ## Live runs
 Each `pnpm demo:run` writes `docs/demo-runs/<timestamp>.json` with its tx hashes.
+
+## Local end-to-end over HTTP (simulated Circle), Oct 27, 2026
+Before the Circle keys existed, the full stack ran locally:
+- `next start` (production build)
+- the real executor wiring (`apps/executor/src/run.ts`: pg-boss jobs, sweeper, balance refresh)
+- Postgres
+- a simulated `CirclePort` (`pnpm sim`)
+
+Nothing touched Arc, and none of this counts as evidence of Arc transactions. What was exercised:
+- **Demo agent:** INV-88213 `executed` → PAID; BM-7 `pending_approval`; INV-88240 `blocked` (INV-PAYEE-PINNED); HC-2210 `pending_approval`.
+- **`demo:run` (`DEMO_RUN_SIMULATED=1`):** 7/7 steps, 3 consecutive passes on a clean database.
+  - What each run covers: owner login, CSRF, stale seal 409, approve, drift void inside the 5 s grace window, idempotent replay, audit verify, and a balance delta equal to amount + fee.
+  - After about 6 runs in one IST day the 1.50 daily auto cap is spent, and step 1 correctly turns into `pending_approval`.
+- **MCP server:**
+  - stdio: lists the three tools; `twokey_get_mandate` hides wallet ids; `twokey_pay` executes; a 7-dp amount is rejected.
+  - Streamable HTTP: 401 without an agent key; `tools/list` works with one.
+- **Dashboard (browser):**
+  - login form;
+  - a 400 ms press does **not** approve ("Keep holding"), and the fill is 0.5 at 600 ms;
+  - a full hold approves → PAID;
+  - Enter on the focused button approves → PAID;
+  - Reject needs a reason;
+  - drift then hold → "the amount changed from 0.70 to 1.20. Nothing was sent.";
+  - Verify chain: intact, 142 entries;
+  - mandate and approval pages render;
+  - no horizontal overflow at 375 px.
+- **Sessions:** a session survives a web restart; logout without CSRF → 403; a logged-out token → 401.
+
+Bugs found and fixed by these runs:
+- The agent rate limit counted status polling. It now counts only payment requests and cancels; there's a test.
+- The approval panel jumped to the next pending item after a decision.
+- The mobile grid overflowed at 375 px.
+- The web service had no pre-deploy migration. Production returned 500s until the schema existed; `preDeployCommand: pnpm db:migrate` fixes it.
+- Error logs repeated SQL params. They now log the cause only.

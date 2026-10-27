@@ -25,7 +25,8 @@
     "mcp": "tsx apps/mcp/src/stdio.ts",
     "transcript": "tsx scripts/transcript.ts",
     "code-shots": "tsx scripts/code-shots.ts",
-    "telegram:setup": "tsx --env-file-if-exists=.env scripts/telegram-setup.ts"
+    "telegram:setup": "tsx --env-file-if-exists=.env scripts/telegram-setup.ts",
+    "sim": "tsx scripts/local-sim.ts"
   },
   "devDependencies": {
     "@node-rs/argon2": "2.0.2",

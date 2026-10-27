@@ -7,7 +7,7 @@ export function POST(req: Request, { params }: { params: Promise<{ id: string }>
   return handle(async () => {
     const { id } = await params;
     if (req.headers.get('authorization')) {
-      const agent = await requireAgent(req);
+      const agent = await requireAgent(req, { limited: true });
       return json(await cancelPayment(await deps(), { intentId: id, actor: { type: 'agent', id: agent.agentId }, agentId: agent.agentId }));
     }
     const owner = await requireOwner(req, { mutation: true });

@@ -53,7 +53,7 @@ code, .mono { font-family: var(--mono); }
 .bar { display: grid; grid-template-columns: 220px 1fr auto; align-items: center; border-bottom: 1px solid var(--line); font-size: 13px; color: var(--faint); background: rgba(255,255,255,.012); }
 .brand { display: flex; align-items: center; gap: 9px; padding-left: 16px; color: var(--text); font-weight: 500; }
 .brand svg { width: 18px; height: 18px; }
-.crumb { padding-left: 18px; color: var(--soft); } .crumb em { font-style: normal; color: var(--faint); margin: 0 6px; }
+.crumb { padding-left: 18px; color: var(--soft); min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; } .crumb em { font-style: normal; color: var(--faint); margin: 0 6px; }
 .bar-right { display: flex; align-items: center; gap: 12px; padding-right: 16px; white-space: nowrap; }
 .net { display: inline-flex; align-items: center; gap: 7px; }
 .net i { width: 7px; height: 7px; border-radius: 50%; background: var(--paid); box-shadow: 0 0 8px rgba(76,195,138,.6); }
@@ -78,18 +78,18 @@ code, .mono { font-family: var(--mono); }
 /* Timeline */
 .split { display: grid; grid-template-columns: minmax(0, 1fr) 420px; min-height: calc(100vh - 44px - 63px); }
 .rows { list-style: none; margin: 0; padding: 0; border-right: 1px solid var(--line); }
-.row { display: grid; grid-template-columns: 48px 1fr auto; gap: 2px 12px; align-items: center; padding: 11px 22px; border-bottom: 1px solid var(--line); font-size: 13.5px; }
+.row { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; gap: 2px 12px; align-items: center; padding: 11px 22px; border-bottom: 1px solid var(--line); font-size: 13.5px; }
 .row:hover { background: rgba(255,255,255,.025); }
 .row.sel { background: linear-gradient(90deg, rgba(217,180,106,.09), transparent 70%); box-shadow: inset 2px 0 0 var(--brass); }
 .row time { font: 400 12px var(--mono); color: var(--faint); grid-row: span 2; }
-.row .t { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.row .m { color: var(--faint); font-size: 12.5px; grid-column: 2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row .t { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row .m { min-width: 0; color: var(--faint); font-size: 12.5px; grid-column: 2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .row .m a { color: var(--soft); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; }
 .row .st { grid-row: span 2; grid-column: 3; }
 .empty { padding: 40px 22px; color: var(--faint); }
 
 /* Detail / approval card */
-.detail { padding: 18px 22px 22px; font-size: 13.5px; min-width: 0; }
+.detail { padding: 18px 22px 22px; font-size: 13.5px; min-width: 0; overflow-wrap: anywhere; }
 .d-top { display: flex; justify-content: space-between; align-items: center; color: var(--faint); font-size: 12.5px; gap: 8px; }
 .detail h2 { margin: 12px 0 2px; font-size: 17px; }
 .amt { font-size: 28px; font-weight: 500; letter-spacing: -.03em; font-variant-numeric: tabular-nums; margin-bottom: 12px; }
@@ -157,12 +157,18 @@ code, .mono { font-family: var(--mono); }
 .err { color: var(--block); font-size: 13px; min-height: 1.2em; }
 
 @media (max-width: 900px) {
-  .body { grid-template-columns: 1fr; }
+  .body { grid-template-columns: minmax(0, 1fr); }
   .side { display: none; }
-  .bar { grid-template-columns: auto 1fr auto; }
-  .split { grid-template-columns: 1fr; }
-  .rows { border-right: 0; }
-  .row { grid-template-columns: 1fr auto; padding: 11px 16px; }
+  .bar { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .crumb { padding-left: 10px; }
+  .net { display: none; }
+  .split { grid-template-columns: minmax(0, 1fr); }
+  .rows { border-right: 0; border-bottom: 1px solid var(--line); }
+  .row { grid-template-columns: minmax(0, 1fr) auto; padding: 11px 16px; }
+  .head, .detail, .page { padding-left: 16px; padding-right: 16px; }
+  .audit-line { grid-template-columns: 40px 1fr; }
+  .audit-line time { display: none; }
+  .table { display: block; overflow-x: auto; }
   .row time { display: none; }
   .row .m { grid-column: 1; }
   .row .st { grid-column: 2; grid-row: 1 / span 2; }

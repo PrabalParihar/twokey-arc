@@ -5,7 +5,7 @@ import { cfg, db, deps } from '@/lib/server';
 /** Agent: request a payment. Twokey answers executed, pending_approval or blocked. */
 export function POST(req: Request) {
   return handle(async () => {
-    const agent = await requireAgent(req);
+    const agent = await requireAgent(req, { limited: true });
     const claimed = req.headers.get('x-twokey-agent');
     if (claimed && claimed !== agent.agentId) return json({ error: { code: 'agent_mismatch', message: 'key belongs to another agent' } }, 403);
     const body = await req.json().catch(() => null);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 /** Re-renders the server page every few seconds so statuses move without a reload. */
@@ -45,8 +45,11 @@ const HOLD_MS = 1200;
  * Press and hold for 1.2 s, or press Enter, to approve these exact terms. The seal shown is the seal sent:
  * the server answers 409 if anything moved since the card rendered.
  */
-export function ApprovalActions({ approvalId, seal, csrf }: { approvalId: string; seal: string; csrf: string }) {
+export function ApprovalActions({ approvalId, paymentId, seal, csrf }: { approvalId: string; paymentId: string; seal: string; csrf: string }) {
   const router = useRouter();
+  const path = usePathname();
+  // On Today, pin the panel to this payment; otherwise it would jump to the next one waiting.
+  const stay = () => (path === '/' ? router.replace(`/?id=${paymentId}`) : router.refresh());
   const btn = useRef<HTMLButtonElement>(null);
   const [status, setStatus] = useState('');
   const [busy, setBusy] = useState(false);
@@ -61,7 +64,7 @@ export function ApprovalActions({ approvalId, seal, csrf }: { approvalId: string
     try {
       const r = await post(`/api/v1/approvals/${approvalId}/approve`, csrf, { seal });
       setStatus(r.note ? `Approved · ${r.note}` : 'Approved · sending on Arc…');
-      router.refresh();
+      stay();
     } catch (e) {
       setStatus((e as Error).message);
       setBusy(false);
@@ -106,7 +109,7 @@ export function ApprovalActions({ approvalId, seal, csrf }: { approvalId: string
     try {
       await post(`/api/v1/approvals/${approvalId}/reject`, csrf, { reason });
       setStatus('Rejected · nothing was sent');
-      router.refresh();
+      stay();
     } catch (err) {
       setStatus((err as Error).message);
       setBusy(false);

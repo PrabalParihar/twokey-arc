@@ -81,8 +81,9 @@ await step('1 inside the mandate: Oceanic 0.25 runs on its own and is final on A
 await step('2 outside the mandate: Brightline 0.75 waits for the second key, then pays', async () => {
   const r = await pay('BM-7', { name: 'Brightline Media', address: w.payees.brightline.address }, '0.75', 'BM-7');
   check(r.outcome === 'pending_approval', `expected pending_approval, got ${r.outcome}`);
-  const failed = r.checks.filter((c) => !c.pass).map((c) => c.id).sort().join(',');
-  check(failed === 'payee_known,per_tx_limit', `failed checks ${failed}`);
+  // New payee and over the per-payment cap; the daily cap may also be spent after earlier runs today.
+  const failed = r.checks.filter((c) => !c.pass).map((c) => c.id);
+  check(failed.includes('payee_known') && failed.includes('per_tx_limit'), `failed checks ${failed.join(',')}`);
   const pre = await agent.getPayment(r.paymentId);
   check(pre.status === 'AWAITING_APPROVAL' && !pre.circleTransactionId, 'a Circle call happened before approval');
   const ap = await owner<{ seal: string }>('GET', `/api/v1/approvals/${r.approval!.id}`);
