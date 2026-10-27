@@ -10,7 +10,7 @@ export interface WalletsFile {
   payees: { oceanic: { id: string; address: string }; harbor: { id: string; address: string }; brightline: { id: string; address: string } };
 }
 
-export const WALLETS_PATH = resolve(import.meta.dirname, '../../config/wallets.arc-testnet.json');
+export const WALLETS_PATH = process.env.TWOKEY_WALLETS_FILE ?? resolve(import.meta.dirname, '../../config/wallets.arc-testnet.json');
 export const readWallets = (): WalletsFile | null => (existsSync(WALLETS_PATH) ? (JSON.parse(readFileSync(WALLETS_PATH, 'utf8')) as WalletsFile) : null);
 export const writeWallets = (w: WalletsFile) => writeFileSync(WALLETS_PATH, `${JSON.stringify(w, null, 2)}\n`);
 

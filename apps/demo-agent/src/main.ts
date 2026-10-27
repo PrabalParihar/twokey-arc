@@ -14,7 +14,7 @@ const url = process.env.TWOKEY_URL ?? 'http://localhost:3000';
 const key = process.env.TWOKEY_AGENT_KEY;
 if (!key) throw new Error('TWOKEY_AGENT_KEY is not set (pnpm seed writes it)');
 
-const wallets = JSON.parse(readFileSync(resolve(import.meta.dirname, '../../../config/wallets.arc-testnet.json'), 'utf8')) as {
+const wallets = JSON.parse(readFileSync(process.env.TWOKEY_WALLETS_FILE ?? resolve(import.meta.dirname, '../../../config/wallets.arc-testnet.json'), 'utf8')) as {
   payees: { brightline: { address: string } };
 };
 const inbox = loadInbox({ BRIGHTLINE: wallets.payees.brightline.address, ATTACKER: '0xD15ea5E000000000000000000000000000000BAD' });

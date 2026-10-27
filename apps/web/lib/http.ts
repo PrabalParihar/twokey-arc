@@ -16,7 +16,9 @@ export const apiError = (status: number, code: string, message: string, details?
 export function handle(fn: () => Promise<Response>): Promise<Response> {
   return fn().catch((err: unknown) => {
     if (err instanceof TwokeyError) return apiError(err.status, err.code, err.message, err.details);
-    console.error('[api] unexpected', err instanceof Error ? err.message : err);
+    // Log the underlying cause only: drizzle's message repeats the query and its params (hashes, ids).
+    const cause = err instanceof Error ? ((err.cause as Error | undefined)?.message ?? err.message.split('\n')[0]) : String(err);
+    console.error('[api] unexpected', cause);
     return apiError(500, 'internal', 'something went wrong');
   });
 }

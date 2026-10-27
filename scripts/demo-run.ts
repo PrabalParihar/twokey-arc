@@ -40,6 +40,8 @@ const owner = async <T>(method: string, path: string, body?: unknown): Promise<{
 };
 
 async function arcReceipt(txHash: string): Promise<{ status: string; blockNumber: string } | null> {
+  // Local simulation only: there is no Arc transaction to look up. Never set this for evidence runs.
+  if (process.env.DEMO_RUN_SIMULATED === '1') return { status: '0x1', blockNumber: '0x0' };
   const res = await fetch(RPC, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_getTransactionReceipt', params: [txHash] }) });
   return ((await res.json()) as { result: { status: string; blockNumber: string } | null }).result;
 }
@@ -154,6 +156,10 @@ await step('7 balance: treasury dropped by exactly the amounts paid plus their U
 });
 
 const ok = results.every((r) => r.ok);
+if (process.env.DEMO_RUN_SIMULATED === '1') {
+  console.log(`\n${ok ? 'PASS' : 'FAIL'} (SIMULATED Circle: not evidence, nothing written to docs/demo-runs)`);
+  process.exit(ok ? 0 : 1);
+}
 mkdirSync(resolve(import.meta.dirname, '../docs/demo-runs'), { recursive: true });
 writeFileSync(resolve(import.meta.dirname, `../docs/demo-runs/${run}.json`), `${JSON.stringify({ run, url: URL_, ok, results }, null, 2)}\n`);
 console.log(`\n${ok ? 'PASS' : 'FAIL'} · tx hashes:`);
