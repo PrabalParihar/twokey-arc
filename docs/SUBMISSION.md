@@ -15,7 +15,7 @@ The two-key rule for AI agents that move USDC: routine payments run on their own
 
 ## What we built (testnet, open for review)
 - **Repo:** https://github.com/PrabalParihar/twokey-arc «make public before submitting»
-- **Live demo:** «Railway URL»
+- **Live demo:** https://twokey.si (Railway: web + executor + Postgres, Arc Testnet)
 - **Video (≤ 3 min):** «link»
 
 How a payment moves:
@@ -50,16 +50,24 @@ Circle's Agent Stack spending policies (caps and allow/block lists, set via the 
 
 Twokey can sit in front of the same wallet even when Circle-side caps are also set, as defense in depth.
 
-## Evidence (testnet)
-- `pnpm test`: «N» tests. The policy engine has 100% branch coverage. There are integration tests on Postgres for:
+## Evidence (testnet, Oct 27, 2026)
+- `pnpm test`: **169 tests pass** (unit + Postgres integration). The policy engine has 100% branch coverage. Integration tests cover:
   - idempotency
   - the daily-cap race
   - seal mismatch (409)
   - drift void
   - write-ahead
   - crash and timeout recovery
-- `pnpm demo:run`, 3 consecutive passes against Arc Testnet with real Circle calls. Tx hashes: «hash 1», «hash 2», … ([explorer](https://explorer.testnet.arc.io)).
-- `pnpm chaos`: «runs» crash and timeout runs on testnet, **0 double payments**.
+  - agents can't approve
+  - web refuses Circle credentials
+- **Smoke transfer on Arc Testnet via Circle Wallets:** COMPLETE in 4.0 s, fee 0.001888 USDC, tx [`0xa9bb6320…`](https://explorer.testnet.arc.io/tx/0xa9bb632019bcdb723d60ac499c6d5001f2c7c416676a30beabab1678d4d522e7).
+- **`pnpm demo:run`: 3 consecutive passes** against Arc Testnet with real Circle calls. In-mandate payments were PAID in 4–6 s; approved payments went out only after the sealed approval.
+  - Tx hashes: [`0x05c9…`](https://explorer.testnet.arc.io/tx/0x05c9710eb7262b4c5539be23d6238ec6faee25a238a2e9c0813111690c4e7c9a), [`0xf08e…`](https://explorer.testnet.arc.io/tx/0xf08e999681881ee022731027866f084a239875e3437e99b9c26adb055175da2c), [`0xf72f…`](https://explorer.testnet.arc.io/tx/0xf72fbabf5c42ba226e50f72b6fd20c58a0d204b96ddd97834a4755fc03eeae80), [`0x154e…`](https://explorer.testnet.arc.io/tx/0x154e9b0d09de3feb090f5a3519d7317f63b940446e3bbcd0f90dbae1d6f44529), [`0xc95f…`](https://explorer.testnet.arc.io/tx/0xc95fa37825795165d49dd8cef7574ec0d50fdcb2230f97fbc40364ba6e22c92e), [`0xf798…`](https://explorer.testnet.arc.io/tx/0xf7989948d1777318fb810d8ddccae1ef6b286bb242fa0c4e03ebdb36940bd292)
+- **Chaos suite on testnet:** 20 crash and timeout runs, **20/20 paid exactly once, 0 double payments**. This also confirms that Circle's idempotency key replay returns the original transfer.
+- **What the live runs taught us about the Circle API:** see [VERIFY.md](VERIFY.md).
+  - `blockchain` is required next to `tokenAddress`, but refused next to `walletIds`.
+  - The list endpoint omits `refId`.
+  - Arc USDC shows up as both a native entry and an ERC-20 entry.
 
 ## Team
 **Prabal Pratap Singh**, solo founder (Lucknow, India). Background in smart contracts, DeFi and AI agents. Twokey's product site is https://twokey.online. «Add 1–2 lines of prior shipped work and links: GitHub, previous projects.»
