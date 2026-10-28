@@ -71,7 +71,7 @@ function headline(status: string, approved: boolean): string {
   }
 }
 
-/** The dark card: one payment, why it landed where it did, and (if it waits for you) the hold to sign it. */
+/** The sheet: one payment, why it landed where it did, and (if it waits for you) the hold to sign it. */
 export function PaymentDetail(props: {
   intent: IntentRow;
   approval: ApprovalRow | null;
@@ -92,12 +92,14 @@ export function PaymentDetail(props: {
   const name = i.payeeName ?? (i.destinationAddress ? shortAddr(i.destinationAddress) : 'Unknown payee');
 
   return (
-    <section className={`focus${i.status === 'VOIDED' ? ' is-void' : ''}`} aria-label="Payment detail">
-      <div className="f-top">
-        <b>{headline(i.status, i.approved)}</b>
-        {pendingApproval ? <span>expires in {expiresMin} min</span> : <span className={`st ${chip.cls}`}>{chip.label}</span>}
+    <section className={`sheet${i.status === 'VOIDED' ? ' is-void' : ''}`} aria-label="Payment detail">
+      <div className="sh-top">
+        <span>
+          {i.agentId} · {timeIst(i.createdAt)} IST
+        </span>
+        {pendingApproval ? <span className="st wait">Needs your signature · {expiresMin} min</span> : <span className={`st ${chip.cls}`}>{headline(i.status, i.approved)}</span>}
       </div>
-      <div className="f-who">
+      <div className="sh-who">
         <span className="monogram">{name.replace(/^"/, '').slice(0, 1).toUpperCase()}</span>
         <div>
           <b>{name}</b>
@@ -111,84 +113,50 @@ export function PaymentDetail(props: {
                 </a>
               </>
             )}
-            {i.memo ? ` · memo ${i.memo}` : ''}
+            {i.memo ? ` · ${i.memo}` : ''}
           </small>
         </div>
       </div>
-      <div className="f-amt">
+      <div className="sh-amt">
         {usdcNum(i.amount)}
         <em>USDC</em>
       </div>
 
-      <ul className="f-why" aria-label={`Why: ${i.ruleId}`}>
-        {i.lane === 'BREAKS_RULE' ? (
-          <li className="no">{checks[0]?.detail ?? RULE_LINE[i.ruleId] ?? i.ruleId}</li>
-        ) : (
-          checks
-            .filter((c) => !c.pass)
-            .map((c) => (
-              <li key={c.id} className="ask">
-                {c.detail}
-              </li>
-            ))
-        )}
-        {i.lane !== 'BREAKS_RULE' && checks.every((c) => c.pass) && <li>{RULE_LINE[i.ruleId] ?? 'Inside your mandate'}</li>}
-        {i.lane === 'ADDS_RISK' && <li className="dim">No hard rule broken</li>}
-      </ul>
-
-      {a && (
-        <div className="f-seal">
-          <span>Sealed to these exact terms</span>
-          <b>{sealGroups(a.seal)}</b>
-        </div>
-      )}
-
-      {i.status === 'PAID' && at?.txHash && (
-        <div className="f-note paid">
-          Final on Arc ·{' '}
-          <a href={explorerTx(at.txHash)} target="_blank" rel="noreferrer">
-            tx {at.txHash.slice(0, 10)}…{at.txHash.slice(-4)}
-          </a>
-        </div>
-      )}
-      {(i.status === 'QUEUED' || i.status === 'SUBMITTED') && (
-        <div className="f-note">{i.approved ? 'Signed. Twokey checks the seal once more, then sends through the Circle wallet.' : 'Inside the mandate, sending through the Circle wallet.'}</div>
-      )}
-      {i.status === 'BLOCKED' && <div className="f-note block">Refused before it reached Circle. Nothing was sent, and no approval can override it.</div>}
-      {i.status === 'VOIDED' && (
-        <div className="f-note void">
-          {voidDetail?.amount_from
-            ? `The amount changed from ${usdcNum(voidDetail.amount_from)} to ${usdcNum(voidDetail.amount_to!)} after it was sealed`
-            : `The terms changed after they were sealed (${a?.voidReason ?? 'terms changed'})`}
-          . Nothing was sent.
-        </div>
-      )}
-      {i.status === 'REJECTED' && <div className="f-note block">Rejected: {a?.rejectReason}. Nothing was sent.</div>}
-      {i.status === 'EXPIRED' && <div className="f-note void">The approval window closed. Nothing was sent.</div>}
-      {i.status === 'FAILED' && <div className="f-note block">Circle reported a failure. Not retried automatically.</div>}
-      {i.status === 'NEEDS_HUMAN' && <div className="f-note">Circle&apos;s answer was unclear after retries with the same key. Check the treasury in the Circle console.</div>}
-
-      {pendingApproval && a && <ApprovalActions approvalId={a.id} paymentId={i.id} seal={a.seal} csrf={props.csrf} />}
-      {props.demoMode && a && (a.status === 'PENDING' || a.status === 'APPROVED') && <DriftButton paymentId={i.id} csrf={props.csrf} />}
-      {!pendingApproval && a && terms && i.status === 'AWAITING_APPROVAL' && (
-        <p className="f-acts">
-          <Link href={`/app/approvals/${a.id}`}>Open the approval</Link>
-        </p>
-      )}
-
-      <table className="f-meta">
+      <table className="kv">
         <tbody>
           <tr>
-            <td>Rule</td>
-            <td className="mono">{i.ruleId}</td>
+            <td>Why</td>
+            <td>
+              <ul className="why" aria-label={`Rule ${i.ruleId}`}>
+                {i.lane === 'BREAKS_RULE' ? (
+                  <li className="no">{checks[0]?.detail ?? RULE_LINE[i.ruleId] ?? i.ruleId}</li>
+                ) : checks.some((c) => !c.pass) ? (
+                  checks
+                    .filter((c) => !c.pass)
+                    .map((c) => (
+                      <li key={c.id} className="ask">
+                        {c.detail}
+                      </li>
+                    ))
+                ) : (
+                  <li>{RULE_LINE[i.ruleId] ?? 'Inside your mandate'}</li>
+                )}
+              </ul>
+            </td>
           </tr>
+          {a && (
+            <tr>
+              <td>Seal</td>
+              <td className="mono">{sealGroups(a.seal)}</td>
+            </tr>
+          )}
           <tr>
             <td>Network</td>
             <td>{props.networkLabel}</td>
           </tr>
           <tr>
             <td>From</td>
-            <td className="mono">Treasury {shortAddr(props.treasury)}</td>
+            <td className="mono">{shortAddr(props.treasury)}</td>
           </tr>
           {i.destinationAddress && (
             <tr>
@@ -202,19 +170,52 @@ export function PaymentDetail(props: {
           {at?.circleTransactionId && (
             <tr>
               <td>Circle tx</td>
-              <td className="mono">{at.circleTransactionId}</td>
+              <td className="mono">{at.circleTransactionId.slice(0, 18)}…</td>
             </tr>
           )}
           <tr>
-            <td>Requested</td>
+            <td>Rule</td>
             <td>
-              {i.agentId} · {timeIst(i.createdAt)} IST
+              <span className="rule">{i.ruleId}</span>
             </td>
           </tr>
         </tbody>
       </table>
 
-      <details className="f-rec" open={feed.length <= 8}>
+      {i.status === 'PAID' && at?.txHash && (
+        <div className="sh-note paid">
+          Final on Arc ·{' '}
+          <a href={explorerTx(at.txHash)} target="_blank" rel="noreferrer">
+            tx {at.txHash.slice(0, 10)}…{at.txHash.slice(-4)}
+          </a>
+        </div>
+      )}
+      {(i.status === 'QUEUED' || i.status === 'SUBMITTED') && (
+        <div className="sh-note">{i.approved ? 'Signed. Twokey checks the seal once more, then sends through the Circle wallet.' : 'Inside the mandate, sending through the Circle wallet.'}</div>
+      )}
+      {i.status === 'BLOCKED' && <div className="sh-note block">Refused before it reached Circle. Nothing was sent, and no approval can override it.</div>}
+      {i.status === 'VOIDED' && (
+        <div className="sh-note void">
+          {voidDetail?.amount_from
+            ? `The amount changed from ${usdcNum(voidDetail.amount_from)} to ${usdcNum(voidDetail.amount_to!)} after it was sealed`
+            : `The terms changed after they were sealed (${a?.voidReason ?? 'terms changed'})`}
+          . Nothing was sent.
+        </div>
+      )}
+      {i.status === 'REJECTED' && <div className="sh-note block">Rejected: {a?.rejectReason}. Nothing was sent.</div>}
+      {i.status === 'EXPIRED' && <div className="sh-note void">The approval window closed. Nothing was sent.</div>}
+      {i.status === 'FAILED' && <div className="sh-note block">Circle reported a failure. Not retried automatically.</div>}
+      {i.status === 'NEEDS_HUMAN' && <div className="sh-note">Circle&apos;s answer was unclear after retries with the same key. Check the treasury in the Circle console.</div>}
+
+      {pendingApproval && a && <ApprovalActions approvalId={a.id} paymentId={i.id} seal={a.seal} csrf={props.csrf} />}
+      {props.demoMode && a && (a.status === 'PENDING' || a.status === 'APPROVED') && <DriftButton paymentId={i.id} csrf={props.csrf} />}
+      {!pendingApproval && a && terms && i.status === 'AWAITING_APPROVAL' && (
+        <p className="f-acts">
+          <Link href={`/app/approvals/${a.id}`}>Open the approval</Link>
+        </p>
+      )}
+
+      <details className="sh-rec" open={feed.length <= 8}>
         <summary>
           Record · {feed.length} audit entries · <Link href="/app/audit">full log</Link>
         </summary>

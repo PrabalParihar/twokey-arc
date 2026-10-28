@@ -29,19 +29,19 @@ export default async function DemoPage() {
           <Link href="/" className="brand">
             <span className="brand-mark" aria-hidden="true" /> Twokey
           </Link>
-          <div className="nav lp-links">
-            <Link className="nav-i" href="/#seal">
+          <div className="lp-links">
+            <Link href="/#seal">
               How the seal works
             </Link>
-            <Link className="nav-i" href="/#live">
+            <Link href="/#live">
               Live receipts
             </Link>
-            <Link className="nav-i" href="/#developers">
+            <Link href="/#developers">
               Developers
             </Link>
           </div>
           <div className="lp-cta">
-            <Link className="btn btn-dark btn-sm" href="/app">
+            <Link className="btn btn-sm" href="/app">
               Console
             </Link>
           </div>
@@ -49,11 +49,11 @@ export default async function DemoPage() {
 
         <DemoDesk initial={initial} />
 
-        <footer className="lp-foot">
-          <span>Arc Testnet: test USDC, no real money moves. Runs are rate limited and capped per day.</span>
-          <span>
+        <footer className="lp-foot" style={{ paddingBottom: 40 }}>
+          <div className="foot-row">
+            <span>Arc Testnet: test USDC, no real money moves. Runs are rate limited and capped per day.</span>
             <Link href="/">Back to Twokey</Link>
-          </span>
+          </div>
         </footer>
       </div>
     </div>

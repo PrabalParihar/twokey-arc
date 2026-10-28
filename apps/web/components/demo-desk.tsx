@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { DemoItem, DemoState } from '@/lib/public-demo';
 import { explorerAddress as addrAt, explorerTx as txAt, TESTNET_EXPLORER } from '@/lib/explorer';
 import { HoldButton } from './hold-button';
+import { Inbox, laneOf } from './inbox';
 
 // The public demo always runs on testnet, whatever network the owner's treasury is on.
 const explorerTx = (h: string) => txAt(h, TESTNET_EXPLORER);
@@ -93,7 +94,6 @@ export function DemoDesk({ initial: first }: { initial: DemoState }) {
   }
 
   const auto = s.items.find((i) => i.step === 'auto');
-  const impostor = s.items.find((i) => i.step === 'impostor');
   const sign = s.items.find((i) => i.step === 'countersign');
   const finished = s.items.length > 0 && !live;
 
@@ -177,21 +177,18 @@ export function DemoDesk({ initial: first }: { initial: DemoState }) {
           </div>
         </section>
       ) : (
-        <section className="dm-bills" aria-label="The agent's three bills" aria-live="polite">
-          <div className="dm-col">
-            {auto && (
-              <Bill n={1} item={auto} title={auto.status === 'PAID' ? 'Paid on its own' : 'Inside the mandate, so it runs'}>
-                Oceanic Freight is a pinned payee and {two(auto.amount)} is under the {two(m.perTx)} cap. Twokey sent it through the Circle wallet
-                without asking anyone.
-              </Bill>
-            )}
-            {impostor && (
-              <Bill n={2} item={impostor} title="Refused before it reached Circle">
-                Same name as a pinned payee, different address: the pattern of an invoice-redirect scam. A pinned payee can only be paid at its own
-                address, and no approval can override that.
-              </Bill>
-            )}
-          </div>
+        <section className="dm-desk" aria-label="The agent's three bills" aria-live="polite">
+          <Inbox
+            per={3}
+            items={s.items.map((i) => ({
+              id: i.id,
+              payee: i.payee ?? short(i.address),
+              amount: two(i.amount),
+              lane: laneOf(i.status),
+              note: noteFor(i, two(m.perTx)),
+              meta: <TxLine item={i} />,
+            }))}
+          />
           {sign && <SignCard item={sign} cap={two(m.perTx)} onChange={refresh} />}
         </section>
       )}
@@ -210,44 +207,35 @@ function TxLine({ item }: { item: DemoItem }) {
   if (item.txHash) {
     return (
       <a href={explorerTx(item.txHash)} target="_blank" rel="noreferrer">
-        Arc tx {short(item.txHash)}
-        {item.seconds !== null ? ` · final in ${item.seconds.toFixed(1)} s` : ''}
+        {short(item.txHash)}
+        {item.seconds !== null ? ` · ${item.seconds.toFixed(1)} s` : ''}
       </a>
     );
   }
   if (item.status === 'QUEUED' || item.status === 'SUBMITTED') return <span>Sending through the Circle wallet…</span>;
-  if (item.status === 'BLOCKED') return <span>Nothing was sent. No Circle call was made.</span>;
-  if (item.status === 'FAILED' || item.status === 'NEEDS_HUMAN') return <span>Circle did not confirm this one; it is not retried.</span>;
-  return null;
+  if (item.status === 'AWAITING_APPROVAL') return <span>Waiting for you</span>;
+  if (item.status === 'FAILED' || item.status === 'NEEDS_HUMAN') return <span>Circle did not confirm; not retried</span>;
+  return <span>No Circle call was made</span>;
 }
 
-/** A bill that decides itself: what happened, the payment, and its Arc transaction. */
-function Bill({ n, item, title, children }: { n: number; item: DemoItem; title: string; children: React.ReactNode }) {
-  return (
-    <div className="card bill" style={{ animationDelay: `${(n - 1) * 220}ms` }}>
-      <div className="card-h">
-        <h3>
-          <span className="bill-n">{n}</span>
-          {title}
-        </h3>
-        <Chip status={item.status} />
-      </div>
-      <p className="bill-note">{children}</p>
-      <div className="bill-pay">
-        <span className="monogram" style={{ background: '#fff' }}>
-          {initial(item.payee)}
-        </span>
-        <span style={{ minWidth: 0 }}>
-          <b>{item.payee ?? 'Unknown payee'}</b>
-          <small>{item.address ?? '—'}</small>
-        </span>
-        <span className="amt">{two(item.amount)}</span>
-      </div>
-      <div className="bill-foot">
-        <TxLine item={item} />
-      </div>
-    </div>
-  );
+/** One line on why a bill is in its lane. */
+function noteFor(i: DemoItem, cap: string): string {
+  if (i.step === 'auto') return i.status === 'PAID' ? `Pinned payee, under the ${cap} cap. Paid without asking.` : `Pinned payee, under the ${cap} cap. Sending.`;
+  if (i.step === 'impostor') return 'Same name as a pinned payee, new address: an invoice-redirect scam. Refused before Circle.';
+  switch (i.status) {
+    case 'AWAITING_APPROVAL':
+      return `New payee, over the ${cap} cap. Sealed, waiting for your signature.`;
+    case 'PAID':
+      return 'Signed by you. The seal still matched when it was sent.';
+    case 'VOIDED':
+      return 'Changed after it was sealed. Your signature does not cover it.';
+    case 'REJECTED':
+      return 'Refused by you. Nothing was sent.';
+    case 'EXPIRED':
+      return 'Nobody signed in time. Nothing was sent.';
+    default:
+      return 'Signed by you. Checking the seal once more, then sending.';
+  }
 }
 
 function headline(i: DemoItem) {
@@ -305,12 +293,9 @@ function SignCard({ item, cap, onChange }: { item: DemoItem; cap: string; onChan
 
   const v = item.voidDetail;
   return (
-    <section className={`focus bill${item.status === 'VOIDED' ? ' is-void' : ''}`} style={{ animationDelay: '440ms' }} aria-label="Bill 3: needs your signature">
+    <section className={`focus${item.status === 'VOIDED' ? ' is-void' : ''}`} aria-label="The bill that needs your signature">
       <div className="f-top">
-        <b style={{ display: 'flex', alignItems: 'center' }}>
-          <span className="bill-n">3</span>
-          {headline(item)}
-        </b>
+        <b>{headline(item)}</b>
         {pending && a ? <span>expires {new Date(a.expiresAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span> : <Chip status={item.status} />}
       </div>
       <p className="bill-note">

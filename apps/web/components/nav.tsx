@@ -10,7 +10,7 @@ export function NavLinks({ pending }: { pending: number }) {
   return (
     <>
       <Link className={on(path === '/app' && view !== 'pending')} href="/app" aria-current={path === '/app' && view !== 'pending' ? 'page' : undefined}>
-        Today
+        Inbox
       </Link>
       <Link className={on((path === '/app' && view === 'pending') || path.startsWith('/app/approvals'))} href="/app?view=pending">
         Needs you {pending > 0 && <em aria-label={`${pending} waiting`}>{pending}</em>}

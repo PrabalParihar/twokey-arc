@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import './landing.css';
-import { AgentDay, dayKind } from '@/components/agent-day';
+import { Inbox, laneOf } from '@/components/inbox';
 import { SignatureCard } from '@/components/signature-card';
 import { explorerTx, TESTNET_EXPLORER } from '@/lib/explorer';
 import { networkName } from '@/lib/format';
@@ -13,31 +13,34 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
   title: 'Twokey on Arc: two signatures for every agent payment',
   description:
-    'Your AI agent pays routine USDC bills on Arc by itself. Anything outside your mandate waits for your countersignature, sealed to the exact amount and payee. Built with Circle Wallets.',
+    'Your AI agent pays the USDC bills you expect on Arc, asks you before the rest, and never pays a stranger. Sealed approvals over Circle Wallets.',
 };
 
 const ist = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false });
 const short = (a: string | null) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : '');
 const amt = (a: string) => Number(a).toFixed(2);
 
-function receiptLine(r: Receipt): { label: string; cls: string; why: string } {
+/** Why a public receipt landed in its lane, in a few words. */
+function why(r: Receipt): string {
   const who = r.demo ? 'a demo visitor' : 'the owner';
   switch (r.status) {
     case 'PAID':
-      return r.approved ? { label: 'Paid', cls: 'paid', why: `countersigned by ${who}` } : { label: 'Paid', cls: 'paid', why: 'inside the mandate' };
+      return r.approved ? `Signed by ${who}` : 'Inside the mandate';
     case 'QUEUED':
     case 'SUBMITTED':
-      return { label: 'Sending', cls: 'run', why: r.approved ? `countersigned by ${who}` : 'inside the mandate' };
+      return r.approved ? `Signed by ${who}, sending` : 'Inside the mandate, sending';
     case 'AWAITING_APPROVAL':
-      return { label: 'Needs you', cls: 'wait', why: 'waiting for a countersignature' };
+      return 'New payee or over a cap, sealed';
     case 'BLOCKED':
-      return { label: 'Blocked', cls: 'block', why: `${r.ruleId} · nothing sent` };
+      return 'Known payee at a new address';
     case 'VOIDED':
-      return { label: 'Void', cls: 'void', why: 'changed after signing · nothing sent' };
+      return 'Changed after signing. Seal void';
     case 'REJECTED':
-      return { label: 'Rejected', cls: 'block', why: `refused by ${who}` };
+      return `Refused by ${who}`;
+    case 'EXPIRED':
+      return 'Nobody signed in time';
     default:
-      return { label: r.status.toLowerCase(), cls: '', why: r.ruleId };
+      return r.ruleId;
   }
 }
 
@@ -60,10 +63,6 @@ async function load(): Promise<{ s: PublicStats | null; tape: Receipt[] }> {
 
 export default async function Landing() {
   const { s, tape } = await load();
-  const now = new Date();
-  // A quiet testnet afternoon shouldn't show an empty day: end the window at the latest decision then.
-  const dayEnd = tape[0] && now.getTime() - tape[0].at.getTime() > 7 * 3_600_000 ? new Date(tape[0].at.getTime() + 600_000) : now;
-
   return (
     <div className="lp">
       <div className="wrap">
@@ -71,25 +70,14 @@ export default async function Landing() {
           <Link href="/" className="brand">
             <span className="brand-mark" aria-hidden="true" /> Twokey
           </Link>
-          <div className="nav lp-links">
-            <a className="nav-i" href="#live">
-              Live on Arc
-            </a>
-            <a className="nav-i" href="#seal">
-              The seal
-            </a>
-            <a className="nav-i" href="#circle">
-              Circle Wallets
-            </a>
-            <a className="nav-i" href="#developers">
-              Developers
-            </a>
-            <a className="nav-i" href="#next">
-              Roadmap
-            </a>
+          <div className="lp-links">
+            <a href="#live">Live on Arc</a>
+            <a href="#seal">The seal</a>
+            <a href="#cards">Agent cards</a>
+            <a href="#developers">Developers</a>
           </div>
           <div className="lp-cta">
-            <Link className="btn btn-dark btn-sm lp-console" href="/app">
+            <Link className="btn btn-sm lp-console" href="/app">
               Console
             </Link>
             <Link className="btn btn-ink btn-sm" href="/demo">
@@ -99,121 +87,84 @@ export default async function Landing() {
         </nav>
 
         <section className="hero">
-          <div className="hero-copy">
-            <span className="pill">
-              <span className="live-dot" /> Live on {networkName(cfg.network)}{s ? ` · ${s.paid} payments settled` : ''}
+          <span className="pill">
+            <span className="live-dot" /> Live on {networkName(cfg.network)}
+            {s ? ` · ${s.paid} payments settled` : ''}
+          </span>
+          <h1 style={{ marginTop: 22 }}>
+            Your agent pays the{' '}
+            <span className="chip c1">
+              <b aria-hidden="true">🧾</b>bills
+            </span>{' '}
+            you expect, asks{' '}
+            <span className="chip c2">
+              <b aria-hidden="true">✋</b>you
+            </span>{' '}
+            before the rest, and never pays a{' '}
+            <span className="chip c3">
+              <b aria-hidden="true">⊘</b>stranger
             </span>
-            <h1>Every payment your agent writes needs two signatures.</h1>
-            <p className="lede">
-              Routine bills already carry yours: you signed them once, in your mandate. Anything else waits for your countersignature, sealed to the
-              exact amount and payee. USDC on Arc, through Circle Wallets.
-            </p>
-            <ul className="lanes">
-              <li>
-                <span className="st paid">Paid</span>Known payee, under your caps. Final on Arc in seconds.
-              </li>
-              <li>
-                <span className="st wait">Needs you</span>New payee or over a cap. Nothing moves until you sign.
-              </li>
-              <li>
-                <span className="st void">Void</span>Changed after you signed, or a known payee at a new address.
-              </li>
-            </ul>
-            <div className="hero-ctas">
-              <Link className="btn btn-ink" href="/demo">
-                Countersign a live payment
-              </Link>
-              <a className="btn" href="#seal">
-                How the seal works
-              </a>
-            </div>
+            .
+          </h1>
+          <p className="lede">
+            Twokey sits between your AI agent and a Circle wallet on Arc. Every USDC payment is decided by your mandate or sealed for your signature,
+            and every decision is on a tamper-evident record.
+          </p>
+          <div className="hero-ctas">
+            <Link className="btn btn-ink" href="/demo">
+              Countersign a live payment
+            </Link>
+            <a className="btn" href="#seal">
+              How the seal works
+            </a>
           </div>
-          <div className="window" aria-label="Product preview">
-            <SignatureCard paidTx={s?.last?.txHash ?? null} paidSeconds={s?.last?.seconds ?? null} />
-            <div className="window-row">
-              <div className="mini lime">
-                <small>Request to final on Arc</small>
-                <b>
-                  {s?.last ? s.last.seconds.toFixed(1) : '4.1'}
-                  <em>s</em>
-                </b>
-              </div>
-              <div className="mini">
-                <small>Paid exactly once, crash tests</small>
-                <b>
-                  20<em>/ 20</em>
-                </b>
-              </div>
-              <div className="mini">
-                <small>Audit chain</small>
-                <b>
-                  {s ? s.audit.length : '—'}
-                  <em>{s?.audit.ok === false ? 'broken' : 'intact'}</em>
-                </b>
-              </div>
-            </div>
-          </div>
-        </section>
 
-        <section className="sec" id="live">
-          <div className="sec-h">
-            <h2>The receipts are real.</h2>
-            <p>
-              Every decision on Twokey&apos;s treasury ({networkName(cfg.network)}) and the live demo (Arc Testnet), as it happened. Paid lines link to the Arc
-              explorer.
-            </p>
-          </div>
-          <div className="live-grid">
-            <div className="card">
-              <div className="card-h">
-                <h3>The agents&apos; day</h3>
-                <span>last eight hours, IST</span>
-              </div>
-              <AgentDay
-                now={dayEnd}
-                items={tape.map((r, i) => ({
-                  id: `${i}`,
-                  at: r.at,
-                  payee: r.payee ?? short(r.address),
-                  amount: amt(r.amount),
-                  kind: dayKind(r.status, r.approved),
-                  sub: receiptLine(r).label,
-                }))}
-              />
+          <div className="window" id="live" aria-label="Live decisions">
+            <div className="window-bar">
+              <span className="dots" aria-hidden="true">
+                <i />
+                <i />
+                <i />
+              </span>
+              <span>Live inbox · Twokey&apos;s treasury and the public demo</span>
+              <span>{s ? (s.audit.ok ? `audit chain intact · ${s.audit.length}` : 'audit chain broken') : 'offline'}</span>
             </div>
-            <div className="card">
-              <div className="card-h">
-                <h3>Latest decisions</h3>
-                <span>{s ? (s.audit.ok ? `chain intact · ${s.audit.length}` : 'chain broken') : 'offline'}</span>
-              </div>
-              <ul className="rows">
-                {tape.length === 0 && <li className="empty">No receipts yet.</li>}
-                {tape.slice(0, 6).map((r, i) => {
-                  const l = receiptLine(r);
-                  const name = r.payee ?? short(r.address);
-                  return (
-                    <li className="row" key={i}>
-                      <span className="monogram">{name.replace(/^"/, '').slice(0, 1).toUpperCase()}</span>
-                      <span style={{ minWidth: 0 }}>
-                        <span className="t">{name}</span>
-                        <span className="m">
-                          {ist.format(r.at)} · {l.why}
-                          {r.txHash && (
-                            <>
-                              {' · '}
-                              <a href={explorerTx(r.txHash, r.demo ? TESTNET_EXPLORER : undefined)} target="_blank" rel="noreferrer">
-                                {short(r.txHash)}
-                              </a>
-                            </>
-                          )}
-                        </span>
-                      </span>
-                      <span className="a">{amt(r.amount)}</span>
-                      <span className={`st ${l.cls}`}>{l.label}</span>
-                    </li>
-                  );
-                })}
-              </ul>
+            <Inbox
+              per={2}
+              items={tape.map((r, i) => ({
+                id: `${i}`,
+                payee: r.payee ?? short(r.address),
+                amount: amt(r.amount),
+                lane: laneOf(r.status),
+                note: why(r),
+                meta: r.txHash ? (
+                  <a href={explorerTx(r.txHash, r.demo ? TESTNET_EXPLORER : undefined)} target="_blank" rel="noreferrer">
+                    {short(r.txHash)}
+                    {r.seconds !== null ? ` · ${r.seconds.toFixed(1)} s` : ''}
+                  </a>
+                ) : (
+                  `${ist.format(r.at)} IST${r.demo ? ' · demo' : ''}`
+                ),
+              }))}
+            />
+          </div>
+          <div className="hero-facts">
+            <div>
+              <b>
+                {s?.last ? s.last.seconds.toFixed(1) : '4.1'}
+                <em>s</em>
+              </b>
+              request to final on Arc
+            </div>
+            <div>
+              <b>
+                20<em>/ 20</em>
+              </b>
+              paid exactly once in crash tests
+            </div>
+            <div>
+              <b>{s ? s.paid : '—'}</b>
+              payments settled through Circle Wallets
             </div>
           </div>
         </section>
@@ -221,43 +172,132 @@ export default async function Landing() {
         <section className="sec" id="seal">
           <div className="sec-h">
             <h2>You sign the terms, not a button.</h2>
-            <p>An approval in Twokey is a signature over the payment itself, checked again at the last moment before any money moves.</p>
+            <p>Try it: hold to sign, then let the agent change a cent. The seal is a real SHA-256 of the terms, computed in your browser.</p>
           </div>
           <div className="seal-grid">
-            <ol className="steps">
-              <li className="card">
-                <b>The agent writes the payment</b>
-                <p>Payee, address, amount, chain, memo and an expiry. It holds no wallet credentials; it can only ask.</p>
-              </li>
-              <li className="card">
-                <b>Twokey seals the terms</b>
-                <p>The terms are written in one canonical form (RFC 8785) and hashed with SHA-256. Your countersignature covers that seal.</p>
-              </li>
-              <li className="card">
-                <b>The seal is checked again before money moves</b>
-                <p>Right before the Circle transfer, the terms are rebuilt from the payment as it will be sent. One cent different, and the approval is void.</p>
-              </li>
-            </ol>
-            <div className="terms-doc focus" aria-label="Example of sealed terms">
-              <pre>
-                {'{\n'}
-                {'  '}
-                <span className="k">&quot;payee&quot;</span>: &quot;Brightline Media&quot;,{'\n'}
-                {'  '}
-                <span className="k">&quot;address&quot;</span>: &quot;0x8569…9b92&quot;,{'\n'}
-                {'  '}
-                <span className="k">&quot;amount&quot;</span>: &quot;0.750000&quot;,{'\n'}
-                {'  '}
-                <span className="k">&quot;token&quot;</span>: &quot;USDC 0x3600…0000&quot;,{'\n'}
-                {'  '}
-                <span className="k">&quot;network&quot;</span>: &quot;ARC-TESTNET&quot;,{'\n'}
-                {'  '}
-                <span className="k">&quot;expires_at&quot;</span>: &quot;2026-10-27T16:36:00Z&quot;{'\n'}
-                {'}'}
+            <SignatureCard paidTx={s?.last?.txHash ?? null} paidSeconds={s?.last?.seconds ?? null} />
+            <div className="card">
+              <ol className="steps">
+                <li>
+                  <b>The agent writes the payment</b>
+                  <p>Payee, address, amount, chain, memo and an expiry. It holds no wallet credentials; it can only ask.</p>
+                </li>
+                <li>
+                  <b>Twokey seals the terms</b>
+                  <p>One canonical form (RFC 8785), hashed with SHA-256. Your signature covers that seal.</p>
+                </li>
+                <li>
+                  <b>The seal is checked again before money moves</b>
+                  <p>Right before the Circle transfer, the terms are rebuilt from the payment as it will be sent. One cent different, and it is void.</p>
+                </li>
+              </ol>
+              <pre className="terms-doc" style={{ marginTop: 16 }}>
+                {'{ '}
+                <span className="k">&quot;payee&quot;</span>: &quot;Brightline Media&quot;, <span className="k">&quot;amount&quot;</span>: &quot;0.750000&quot;,{'\n  '}
+                <span className="k">&quot;address&quot;</span>: &quot;0x8569…9b92&quot;, <span className="k">&quot;network&quot;</span>: &quot;ARC&quot;, …{' }'}
+                {'\n'}→ sha256 → the seal you countersign
               </pre>
-              <div className="f-seal">
-                <span>sha256(canonical terms)</span>
-                <b>the seal you countersign</b>
+            </div>
+          </div>
+        </section>
+
+        <section className="sec" id="cards">
+          <div className="cards-grid">
+            <div className="pocket-stage" aria-hidden="true">
+              <div className="acard k1">
+                <div className="t">
+                  <span>ap-agent</span>
+                  <span className="mono">0.50 / tx</span>
+                </div>
+                <div className="num">•••• 4021</div>
+                <div className="f">
+                  <span>
+                    <small>Today</small>1.00 of 1.50
+                  </span>
+                  <span>
+                    <small>Pays in</small>USDC on Arc
+                  </span>
+                </div>
+              </div>
+              <div className="acard k2">
+                <div className="t">
+                  <span>ads-agent</span>
+                  <span className="mono">2.00 / tx</span>
+                </div>
+                <div className="num">•••• 7730</div>
+                <div className="f">
+                  <span>
+                    <small>Today</small>3.40 of 10.00
+                  </span>
+                  <span>
+                    <small>Pays in</small>USDC on Arc
+                  </span>
+                </div>
+              </div>
+              <div className="acard k3">
+                <div className="t">
+                  <span>infra-agent</span>
+                  <span className="mono">5.00 / tx</span>
+                </div>
+                <div className="num">•••• 1186</div>
+                <div className="f">
+                  <span>
+                    <small>Today</small>0.00 of 25.00
+                  </span>
+                  <span>
+                    <small>Pays in</small>USDC on Arc
+                  </span>
+                </div>
+              </div>
+              <div className="pocket">
+                <div>
+                  <span>Circle wallet on Arc</span>
+                  <b>One treasury</b>
+                </div>
+                <span className="mono">one mandate per card</span>
+              </div>
+              <div className="ask-bubble">
+                <span style={{ color: '#b26b00', fontWeight: 600 }}>ap-agent asks</span>
+                <b>New merchant · 180.00</b>over the 0.50 cap
+                <span className="btn btn-ink">Hold to countersign</span>
+              </div>
+            </div>
+            <div className="cards-copy">
+              <span className="st wait">Next</span>
+              <h2 style={{ marginTop: 14 }}>Give every agent a card. Keep the second key.</h2>
+              <p>
+                One USDC treasury on Arc, a virtual card per agent, each with its own mandate. Every card authorization asks Twokey first: inside the
+                mandate it clears in seconds, outside it waits for your signature. Today, payments run through Circle Wallets; cards come next.
+              </p>
+              <div className="next-list">
+                <div>
+                  <span>
+                    Arc mainnet
+                    <small>Real USDC, a 5 USDC hard cap per payment. The demo stays on testnet.</small>
+                  </span>
+                  <span className={`st ${cfg.network === 'ARC' ? 'paid' : 'run'}`}>{cfg.network === 'ARC' ? 'Live' : 'Building now'}</span>
+                </div>
+                <div>
+                  <span>
+                    x402 and Circle&apos;s Agent Stack
+                    <small>Paid APIs follow the same mandate as invoices.</small>
+                  </span>
+                  <span className="st wait">Next</span>
+                </div>
+                <div>
+                  <span>
+                    Payees on any chain
+                    <small>Settle from Arc to Base or Ethereum through CCTP and Gateway.</small>
+                  </span>
+                  <span className="st">Planned</span>
+                </div>
+                <div>
+                  <span>
+                    Team signatures
+                    <small>Two of three approvers, a mandate per agent, Slack next to Telegram.</small>
+                  </span>
+                  <span className="st">Planned</span>
+                </div>
               </div>
             </div>
           </div>
@@ -273,7 +313,7 @@ export default async function Landing() {
               <h3>Arc</h3>
               <p>Settles every payment. With sub-second finality, a completed transfer is final by the time it reaches the audit log.</p>
             </div>
-            <div className="card lime">
+            <div className="card blue">
               <h3>USDC on Arc</h3>
               <p>
                 The asset and the gas, read as one 6-decimal balance at <code>0x3600…0000</code>.
@@ -325,7 +365,7 @@ export default async function Landing() {
                     <span className="st">Rejected</span>
                   </td>
                   <td data-label="With Twokey on top">
-                    <span className="st paid">Goes to you</span>
+                    <span className="st wait">Goes to you</span>
                   </td>
                 </tr>
                 <tr>
@@ -343,7 +383,7 @@ export default async function Landing() {
                     <span className="st">No check</span>
                   </td>
                   <td data-label="With Twokey on top">
-                    <span className="st paid">Void, nothing sent</span>
+                    <span className="st block">Void, nothing sent</span>
                   </td>
                 </tr>
                 <tr>
@@ -392,79 +432,8 @@ export default async function Landing() {
                 <p>Hold to sign in the console, or tap Approve in Telegram. Telegram carries part of the seal; the server checks all of it.</p>
               </div>
               <div className="card">
-                <h3>Arc mainnet next</h3>
-                <p>The same code runs on Arc mainnet by configuration, with tighter limits. Payees on other chains, via CCTP and Gateway, come after.</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="sec" id="next">
-          <div className="sec-h">
-            <h2>What Twokey signs next.</h2>
-            <p>The same mandate and the same seal, wherever an agent can spend. Each item says where it stands today.</p>
-          </div>
-          <div className="next-grid">
-            <div className="card ink card-stage" aria-label="Agent cards, planned">
-              <div className="stage" aria-hidden="true">
-                <div className="acard">
-                  <div className="acard-top">
-                    <span className="brand-mark" /> Twokey
-                    <span>Agent card</span>
-                  </div>
-                  <div className="acard-chip" />
-                  <div className="acard-num">•••• •••• •••• 4021</div>
-                  <div className="acard-foot">
-                    <span>
-                      <small>Holder</small>ap-agent
-                    </span>
-                    <span>
-                      <small>Funded by</small>USDC on Arc
-                    </span>
-                  </div>
-                </div>
-                <div className="auth a1">
-                  <span>Figma · 24.00</span>
-                  <b className="st paid">Inside mandate</b>
-                </div>
-                <div className="auth a2">
-                  <span>New merchant · 180.00</span>
-                  <b className="st wait">Needs your signature</b>
-                </div>
-                <div className="auth a3">
-                  <span>Signed by you · sealed 6e47 3773</span>
-                  <b className="st run">Approved</b>
-                </div>
-              </div>
-              <div className="next-copy">
-                <span className="st wait">Next</span>
-                <h3>Agent cards</h3>
-                <p>
-                  A virtual card per agent, funded in USDC on Arc. Every card authorization asks the mandate first: known merchants under the cap
-                  clear on their own, anything new or larger waits for your signature, inside the card network&apos;s time limit.
-                </p>
-              </div>
-            </div>
-            <div className="next-list">
-              <div className="card">
-                <span className={`st ${cfg.network === 'ARC' ? 'paid' : 'run'}`}>{cfg.network === 'ARC' ? 'Live' : 'Building now'}</span>
-                <h3>Arc mainnet</h3>
-                <p>Real USDC through a Circle wallet on Arc, with tighter limits and a 5 USDC hard cap per payment. The live demo stays on testnet.</p>
-              </div>
-              <div className="card">
-                <span className="st wait">Next</span>
-                <h3>x402 and Circle&apos;s Agent Stack</h3>
-                <p>When an agent hits an HTTP 402 paywall, Twokey decides before any USDC moves, so paid APIs follow the same mandate as invoices.</p>
-              </div>
-              <div className="card">
-                <span className="st">Planned</span>
-                <h3>Payees on any chain</h3>
-                <p>Pin a supplier on Base or Ethereum and settle from the Arc treasury through CCTP and Gateway, sealed the same way.</p>
-              </div>
-              <div className="card">
-                <span className="st">Planned</span>
-                <h3>Team signatures</h3>
-                <p>Two of three approvers for large payments, a mandate per agent, and approvals in Slack next to Telegram.</p>
+                <h3>Exactly once, on the record</h3>
+                <p>An idempotency key written before every Circle call, reconciliation after a crash, and a hash-chained log with each Arc tx hash.</p>
               </div>
             </div>
           </div>
@@ -475,14 +444,27 @@ export default async function Landing() {
             <h2>Countersign a real payment on Arc.</h2>
             <p>Run the agent, sign one payment, change a cent on another. About a minute, no sign-up.</p>
           </div>
-          <Link className="btn btn-ink" href="/demo">
+          <Link className="btn btn-lime" href="/demo">
             Open the live demo
           </Link>
         </section>
 
         <footer className="lp-foot">
-          <span>{cfg.network === 'ARC' ? 'Twokey on Arc mainnet. The live demo uses Arc Testnet: no real money moves there.' : 'Twokey on Arc. A testnet build: no real money moves.'}</span>
-          <a href="https://twokey.online">twokey.online</a>
+          <div className="foot-row">
+            <span>
+              {cfg.network === 'ARC'
+                ? 'Twokey on Arc mainnet. The live demo uses Arc Testnet: no real money moves there.'
+                : 'Twokey on Arc. A testnet build: no real money moves.'}
+            </span>
+            <span style={{ display: 'flex', gap: 18 }}>
+              <Link href="/demo">Live demo</Link>
+              <Link href="/app">Console</Link>
+              <a href="https://twokey.online">twokey.online</a>
+            </span>
+          </div>
+          <div className="wordmark" aria-hidden="true">
+            twokey
+          </div>
         </footer>
       </div>
     </div>
