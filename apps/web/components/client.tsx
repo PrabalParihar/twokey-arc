@@ -242,7 +242,7 @@ export function LoginForm() {
       }}
     >
       <h1>Sign in to Twokey</h1>
-      <p>Owner and approver for the Arc Testnet treasury.</p>
+      <p>Owner and approver for the agent treasury on Arc.</p>
       <label>
         Email
         <input className="input" name="email" type="email" autoComplete="username" required />

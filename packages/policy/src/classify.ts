@@ -18,7 +18,7 @@ import type {
 export const ENGINE_VERSION = '0.1.0';
 
 /** Networks this build can pay on. Arc mainnet ("ARC") joins this list in M1, not before. */
-export const SUPPORTED_NETWORKS: readonly string[] = ['ARC-TESTNET'];
+export const SUPPORTED_NETWORKS: readonly string[] = ['ARC-TESTNET', 'ARC'];
 
 const LANE_OUTCOME: Record<Lane, Outcome> = {
   LOWERS_RISK: 'executed',

@@ -4,14 +4,17 @@ import type { PgBoss } from 'pg-boss';
 import { bossJobs, startBoss, type CoreConfig, type CoreDeps } from '@twokey-arc/core';
 import { createDb, users, type Db } from '@twokey-arc/db';
 import { assertNoCircleSecrets } from './boot';
-import { ARC_EXPLORER } from './explorer';
+import { ARC_EXPLORER, TESTNET_EXPLORER } from './explorer';
 
 assertNoCircleSecrets();
 
+/** The owner's treasury network. Mainnet is two deliberate settings, as in the executor. */
+export const MAINNET = process.env.TWOKEY_NETWORK === 'mainnet' && process.env.TWOKEY_ALLOW_MAINNET === 'i-understand-real-usdc';
+
 export const cfg: CoreConfig = {
   orgId: process.env.TWOKEY_ORG_ID ?? 'org_twokey',
-  network: process.env.CIRCLE_BLOCKCHAIN ?? 'ARC-TESTNET',
-  chainId: Number(process.env.ARC_CHAIN_ID ?? 5042002),
+  network: MAINNET ? 'ARC' : 'ARC-TESTNET',
+  chainId: MAINNET ? 5042 : 5042002,
   usdcAddress: process.env.USDC_TOKEN_ADDRESS ?? '0x3600000000000000000000000000000000000000',
   explorerUrl: ARC_EXPLORER,
   defaultFeeEstimateUsdc: process.env.DEFAULT_FEE_ESTIMATE_USDC ?? '0.010000',
@@ -21,9 +24,20 @@ export const cfg: CoreConfig = {
 
 export const OWNER_NAME = process.env.OWNER_NAME ?? 'Prabal';
 
-/** The public demo runs in its own org, with its own Circle wallet and executor. Off unless PUBLIC_DEMO=true. */
+/**
+ * The public demo runs in its own org, with its own Circle wallet and executor, and always on testnet:
+ * anonymous visitors never spend real USDC. Off unless PUBLIC_DEMO=true.
+ */
 export const DEMO_ENABLED = process.env.PUBLIC_DEMO === 'true';
-export const demoCfg: CoreConfig = { ...cfg, orgId: process.env.DEMO_ORG_ID ?? 'org_demo', demoMode: true, approvalGraceSeconds: 6 };
+export const demoCfg: CoreConfig = {
+  ...cfg,
+  orgId: process.env.DEMO_ORG_ID ?? 'org_demo',
+  network: 'ARC-TESTNET',
+  chainId: 5042002,
+  explorerUrl: TESTNET_EXPLORER,
+  demoMode: true,
+  approvalGraceSeconds: 6,
+};
 
 type State = { db: Db; boss: Promise<PgBoss>; ownerReady: Promise<void> };
 const g = globalThis as unknown as { __twokey?: State };

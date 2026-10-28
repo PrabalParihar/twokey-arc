@@ -16,6 +16,9 @@ const istFull = new Intl.DateTimeFormat('en-GB', {
 
 export const timeIst = (d: Date | string) => ist.format(new Date(d));
 export const dateTimeIst = (d: Date | string) => `${istFull.format(new Date(d))} IST`;
+/** 'ARC' is Arc mainnet in Circle's naming. */
+export const networkName = (network: string) => (network === 'ARC' ? 'Arc mainnet' : network === 'ARC-TESTNET' ? 'Arc Testnet' : network);
+
 export const shortAddr = (a: string | null | undefined) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : '—');
 
 /** The four chips the site uses, plus the in-between states, never color alone: each has a word. */

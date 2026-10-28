@@ -15,7 +15,8 @@ The two-key rule for AI agents that move USDC: routine payments run on their own
 
 ## What we built (testnet, open for review)
 - **Repo:** https://github.com/PrabalParihar/twokey-arc «make public before submitting»
-- **Live demo:** https://twokey.si (Railway: web + executor + Postgres, Arc Testnet)
+- **Live demo, no sign-up:** https://twokey.si/demo. A visitor runs the agent against a real Circle wallet on Arc Testnet, watches one bill pay itself and an impostor get blocked, and countersigns the third (or changes a cent and watches it void). Every run is a real Arc transaction.
+- **Owner console:** https://twokey.si/app (Railway: web, executor, demo executor, Postgres). The mainnet code path is in the repo: Circle `ARC`, chain 5042, separate `CIRCLE_LIVE_*` keys, a 5 USDC hard cap per payment.
 - **Video (≤ 3 min):** «link»
 
 How a payment moves:
@@ -73,13 +74,15 @@ Twokey can sit in front of the same wallet even when Circle-side caps are also s
 **Prabal Pratap Singh**, solo founder (Lucknow, India). Background in smart contracts, DeFi and AI agents. Twokey's product site is https://twokey.online. «Add 1–2 lines of prior shipped work and links: GitHub, previous projects.»
 
 ## Traction
-None yet, stated plainly: no users, no volume, no revenue. This is a working testnet build with an open-source quickstart. «If you have design-partner conversations, name them only with their permission.» The credible path: finance teams and agent builders who need an approval layer before they let an agent touch a treasury.
+No paying users or revenue yet, stated plainly. What exists: a public demo that anyone can run on Arc Testnet (each run is a real Circle transfer, counted on the site), and the mainnet path ready to switch on. «Add the demo run count and any mainnet volume on the day you submit.» «If you have design-partner conversations, name them only with their permission.» The credible path: finance teams and agent builders who need an approval layer before they let an agent touch a treasury.
 
 ## Milestones and budget (USDC)
 | Milestone | Amount | Deliverables | Timeline |
 |---|---|---|---|
 | **M1: Twokey guard live on Arc mainnet with Circle Wallets** | $4,000 | `ARC` mainnet config and a LIVE key with an entity secret Prabal registers. A small real treasury. Mainnet guardrails: a visible mainnet banner, a 100 USDC per-payment hard max at launch, an explicit confirmation step, and required Circle webhooks. Passkey step-up on approve (the WebAuthn challenge is the seal). A public demo; an audit log carrying Arc mainnet tx hashes. | weeks 1–4 |
 | **M2: cross-chain payees under the same mandate, plus an open kit** | $6,000 | Payees on other chains, paid via CCTP V2 (App Kit / Bridge Kit with the Circle Wallets adapter) or Gateway. The destination chain, address and fee quote are sealed into the approval. Bridge error recovery uses `retryBridge` and never re-bridges an unknown state. Plus an open-source quickstart, the example agent and the MCP package. | weeks 5–10 |
+
+| **M3: agent cards and paid APIs under the same mandate** | stretch, unfunded | A virtual card per agent funded in USDC on Arc, where each card authorization asks the mandate first and waits for a countersignature when it is new or over a cap; and an x402 guard so paid API calls (Circle Agent Stack, Nanopayments) follow the same rules. | after M2 |
 
 Total requested: **$10,000 USDC** (within the program's published range).
 

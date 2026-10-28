@@ -6,16 +6,18 @@ import { createDb } from '@twokey-arc/db';
 import { migrateDb } from '@twokey-arc/db/migrator';
 import type { loadConfig } from './config';
 
-const WALLETS = resolve(import.meta.dirname, '../../../config/wallets.arc-testnet.json');
+const walletsFile = (network: string) => resolve(import.meta.dirname, '../../../config', network === 'ARC' ? 'wallets.arc-mainnet.json' : 'wallets.arc-testnet.json');
 
 /**
  * SEED_MANDATE_ON_BOOT=true: if the org has no active mandate yet (or its Telegram setting differs from
  * this deployment's), sign and activate the demo mandate
- * (scaled-down limits) with payees pinned to the wallets in config/wallets.arc-testnet.json.
+ * (scaled-down limits) with payees pinned to the wallets in config/wallets.arc-<network>.json. On mainnet the
+ * limits are tighter still: real USDC, and the payees are the owner's own Circle wallets.
  * Mandate only: agent keys are issued by the owner from the dashboard.
  */
 export async function seedMandateIfMissing(conf: ReturnType<typeof loadConfig>, log: Logger): Promise<void> {
-  if (!existsSync(WALLETS)) return log.warn('no config/wallets.arc-testnet.json; skipping mandate seed');
+  const WALLETS = walletsFile(conf.cfg.network);
+  if (!existsSync(WALLETS)) return log.warn({ file: WALLETS }, 'no wallets file for this network; skipping mandate seed');
   const w = JSON.parse(readFileSync(WALLETS, 'utf8')) as {
     treasury: { id: string; address: string };
     demoTreasury?: { id: string; address: string };
@@ -23,6 +25,7 @@ export async function seedMandateIfMissing(conf: ReturnType<typeof loadConfig>, 
   };
   // SEED_PROFILE=public-demo: the visitors' demo org on its own wallet, with cents-sized limits.
   const demo = process.env.SEED_PROFILE === 'public-demo';
+  if (demo && conf.cfg.network === 'ARC') throw new Error('the public demo runs on testnet only: anonymous visitors must never spend real USDC');
   if (demo && !w.demoTreasury) return log.warn('SEED_PROFILE=public-demo but no demoTreasury wallet; skipping mandate seed');
   const treasury = demo ? w.demoTreasury! : w.treasury;
   const { db, pool } = createDb(conf.databaseUrl, 1);
@@ -43,7 +46,9 @@ export async function seedMandateIfMissing(conf: ReturnType<typeof loadConfig>, 
         timezone: process.env.ORG_TIMEZONE ?? 'Asia/Kolkata',
         limits: demo
           ? { per_tx: '0.05', daily: '5.00', hard_max_per_tx: '0.50', min_balance_after: '0.50' }
-          : { per_tx: '0.50', daily: '1.50', hard_max_per_tx: '10.00', min_balance_after: '0.10' },
+          : conf.cfg.network === 'ARC'
+            ? { per_tx: '0.50', daily: '2.00', hard_max_per_tx: '5.00', min_balance_after: '1.00' }
+            : { per_tx: '0.50', daily: '1.50', hard_max_per_tx: '10.00', min_balance_after: '0.10' },
         payees: [
           { payee_id: 'pay_oceanic', name: 'Oceanic Freight', address: w.payees.oceanic.address },
           { payee_id: 'pay_harbor', name: 'Harbor Cloud', address: w.payees.harbor.address },

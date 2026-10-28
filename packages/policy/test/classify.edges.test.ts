@@ -39,8 +39,8 @@ describe('PAY: destination invariants', () => {
   });
 
   it('blocks when the mandate itself names a network this build does not support', () => {
-    expect(SUPPORTED_NETWORKS).toEqual(['ARC-TESTNET']);
-    const v = classify({ type: 'PAY', payee: { payeeId: 'pay_oceanic' }, amount: '1', network: 'ARC' }, st, baseMandate({ network: 'ARC' }), NOW);
+    expect(SUPPORTED_NETWORKS).toEqual(['ARC-TESTNET', 'ARC']);
+    const v = classify({ type: 'PAY', payee: { payeeId: 'pay_oceanic' }, amount: '1', network: 'BASE' }, st, baseMandate({ network: 'BASE' }), NOW);
     expect(v.ruleId).toBe('INV-NETWORK');
   });
 

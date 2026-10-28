@@ -4,6 +4,7 @@ import { attempts } from '@twokey-arc/db';
 import { auditForPayment, getActiveMandate, getApproval } from '@twokey-arc/core';
 import { AutoRefresh } from '@/components/client';
 import { PaymentDetail } from '@/components/payment-detail';
+import { networkName } from '@/lib/format';
 import { cfg, db } from '@/lib/server';
 import { pageOwner } from '@/lib/session';
 
@@ -37,7 +38,7 @@ export default async function ApprovalPage({ params }: { params: Promise<{ id: s
           csrf={csrf}
           treasury={mandate?.source_wallet.address ?? null}
           demoMode={cfg.demoMode}
-          networkLabel={`Arc Testnet (${cfg.chainId})`}
+          networkLabel={`${networkName(cfg.network)} (${cfg.chainId})`}
         />
       </div>
     </>

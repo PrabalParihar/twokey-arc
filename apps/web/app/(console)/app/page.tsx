@@ -3,7 +3,7 @@ import { auditForPayment, autoSpentToday, getActiveMandate, latestBalance, listP
 import { AgentDay, dayKind } from '@/components/agent-day';
 import { AutoRefresh } from '@/components/client';
 import { PaymentDetail } from '@/components/payment-detail';
-import { displayUsdc, reasonLine, statusChip, timeIst } from '@/lib/format';
+import { displayUsdc, networkName, reasonLine, statusChip, timeIst } from '@/lib/format';
 import { explorerTx } from '@/lib/explorer';
 import { publicStats } from '@/lib/public-stats';
 import { cfg, db, OWNER_NAME } from '@/lib/server';
@@ -112,7 +112,7 @@ export default async function Today({ searchParams }: { searchParams: Promise<{ 
             csrf={csrf}
             treasury={mandate?.source_wallet.address ?? null}
             demoMode={cfg.demoMode}
-            networkLabel={`Arc Testnet (${cfg.chainId})`}
+            networkLabel={`${networkName(cfg.network)} (${cfg.chainId})`}
           />
         ) : (
           <section className="focus">

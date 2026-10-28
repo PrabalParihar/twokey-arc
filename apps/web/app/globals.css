@@ -257,9 +257,10 @@ code, .mono { font-family: var(--mono); font-size: .86em; }
   .bento { grid-template-columns: minmax(0, 1fr); }
   .bento .focus, .bento .wide { grid-column: auto; }
   .f-amt { font-size: 56px; }
-  .day { grid-template-columns: minmax(0, 1fr); }
+  /* The day scrolls sideways on a phone rather than squeezing eight hours into 300px. */
+  .day { grid-template-columns: minmax(0, 1fr); overflow-x: auto; padding-bottom: 6px; scroll-snap-type: x proximity; }
   .day-lanes { display: none; }
-  .day-hours span:nth-child(odd) { visibility: hidden; }
+  .day-track { min-width: 620px; }
   .audit-line { grid-template-columns: 44px minmax(0, 1fr); }
   .audit-line time { display: none; }
   .table { display: block; overflow-x: auto; }

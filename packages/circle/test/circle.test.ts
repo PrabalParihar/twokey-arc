@@ -1,7 +1,7 @@
 import { generateKeyPairSync, sign } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { BadRequestError, InternalServerError } from '@circle-fin/developer-controlled-wallets';
-import { arcNetwork, ARC_TESTNET, classifyCircleError, decimalToUsdc6, pickUsdcBalance, verifyWithPublicKey } from '../src';
+import { arcNetwork, ARC_TESTNET, circleClientFromEnv, classifyCircleError, decimalToUsdc6, pickUsdcBalance, verifyWithPublicKey } from '../src';
 
 const USDC = '0x3600000000000000000000000000000000000000';
 
@@ -41,11 +41,20 @@ describe('errors', () => {
 });
 
 describe('network guard', () => {
-  it('defaults to Arc Testnet and refuses mainnet in this build', () => {
+  it('defaults to Arc Testnet; mainnet needs both deliberate settings', () => {
     expect(arcNetwork({}).chainId).toBe(5042002);
     expect(ARC_TESTNET.circleBlockchain).toBe('ARC-TESTNET');
-    expect(() => arcNetwork({ TWOKEY_NETWORK: 'mainnet' })).toThrow(/mainnet is disabled/);
+    expect(() => arcNetwork({ TWOKEY_NETWORK: 'mainnet' })).toThrow(/TWOKEY_ALLOW_MAINNET/);
+    const main = arcNetwork({ TWOKEY_NETWORK: 'mainnet', TWOKEY_ALLOW_MAINNET: 'i-understand-real-usdc' });
+    expect([main.circleBlockchain, main.chainId, main.explorerUrl]).toEqual(['ARC', 5042, 'https://explorer.arc.io']);
     expect(() => arcNetwork({ TWOKEY_NETWORK: 'devnet' })).toThrow();
+  });
+
+  it('keeps TEST and LIVE keys apart', () => {
+    const secret = 'a'.repeat(64);
+    expect(() => circleClientFromEnv({ CIRCLE_API_KEY: 'LIVE_API_KEY:x:y', CIRCLE_ENTITY_SECRET: secret })).toThrow(/expects a TEST_API_KEY/);
+    expect(() => circleClientFromEnv({ TWOKEY_NETWORK: 'mainnet', CIRCLE_API_KEY: 'TEST_API_KEY:x:y', CIRCLE_ENTITY_SECRET: secret })).toThrow(/CIRCLE_LIVE_API_KEY/);
+    expect(() => circleClientFromEnv({ TWOKEY_NETWORK: 'mainnet', CIRCLE_LIVE_API_KEY: 'TEST_API_KEY:x:y', CIRCLE_LIVE_ENTITY_SECRET: secret })).toThrow(/expects a LIVE_API_KEY/);
   });
 });
 

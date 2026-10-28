@@ -22,15 +22,16 @@ export const ARC_MAINNET = {
 export type ArcNetwork = typeof ARC_TESTNET | typeof ARC_MAINNET;
 
 /**
- * Testnet unless a human set TWOKEY_NETWORK=mainnet. The spike refuses mainnet outright:
- * M1 lifts this only after mainnet guardrails ship.
+ * Testnet unless a human set TWOKEY_NETWORK=mainnet, and mainnet also needs TWOKEY_ALLOW_MAINNET spelled out:
+ * two deliberate settings before real USDC can move. Arc mainnet (chain 5042, Circle code ARC) checked live
+ * against rpc.mainnet.arc.io and Circle's supported-blockchains page on Oct 28, 2026.
  */
 export function arcNetwork(env: NodeJS.ProcessEnv = process.env): ArcNetwork {
   const want = env.TWOKEY_NETWORK ?? 'testnet';
   if (want === 'testnet') return ARC_TESTNET;
   if (want === 'mainnet') {
     if (env.TWOKEY_ALLOW_MAINNET !== 'i-understand-real-usdc') {
-      throw new Error('mainnet is disabled in this build (M1). Set TWOKEY_ALLOW_MAINNET only after the M1 guardrails exist.');
+      throw new Error('mainnet needs TWOKEY_ALLOW_MAINNET=i-understand-real-usdc as well as TWOKEY_NETWORK=mainnet');
     }
     return ARC_MAINNET;
   }

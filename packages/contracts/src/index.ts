@@ -17,7 +17,7 @@ export const PaymentRequest = z
       .strict(),
     amount,
     memo: z.string().max(140).optional(),
-    network: z.literal('ARC-TESTNET').optional(),
+    network: z.enum(['ARC-TESTNET', 'ARC']).optional(),
   })
   .strict();
 export type PaymentRequest = z.infer<typeof PaymentRequest>;

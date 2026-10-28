@@ -19,7 +19,7 @@ export function sealGroups(seal: string): string {
   return hex.replace(/(.{4})(?=.)/g, '$1 ');
 }
 
-/** Pins a payee to one (network, address) pair: sha256("ARC-TESTNET:" + lowercase(address)). */
+/** Pins a payee to one (network, address) pair: sha256("ARC:" or "ARC-TESTNET:" + lowercase(address)). */
 export const payeeFingerprint = (network: string, address: string): string =>
   `sha256:${sha256Hex(`${network}:${address.toLowerCase()}`)}`;
 

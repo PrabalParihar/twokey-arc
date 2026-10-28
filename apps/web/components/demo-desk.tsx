@@ -2,8 +2,12 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import type { DemoItem, DemoState } from '@/lib/public-demo';
-import { explorerAddress, explorerTx } from '@/lib/explorer';
+import { explorerAddress as addrAt, explorerTx as txAt, TESTNET_EXPLORER } from '@/lib/explorer';
 import { HoldButton } from './hold-button';
+
+// The public demo always runs on testnet, whatever network the owner's treasury is on.
+const explorerTx = (h: string) => txAt(h, TESTNET_EXPLORER);
+const explorerAddress = (a: string) => addrAt(a, TESTNET_EXPLORER);
 
 const DONE = new Set(['PAID', 'BLOCKED', 'VOIDED', 'REJECTED', 'EXPIRED', 'FAILED', 'CANCELLED', 'NEEDS_HUMAN']);
 

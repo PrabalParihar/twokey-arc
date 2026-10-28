@@ -29,7 +29,7 @@ export async function handleNotifyApproval(deps: ExecutorDeps, log: Logger, tg: 
     memo: intent.memo,
     reasons: (intent.checks as Check[]).filter((c) => !c.pass).map((c) => c.detail),
     expiresAt: approval.expiresAt,
-    networkLabel: deps.cfg.network === 'ARC-TESTNET' ? 'Arc Testnet' : 'Arc',
+    networkLabel: deps.cfg.network === 'ARC-TESTNET' ? 'Arc Testnet' : 'Arc mainnet',
   });
   await deps.db.update(approvals).set({ telegramMessageId: messageId }).where(eq(approvals.id, approvalId));
   log.info({ approvalId, messageId }, 'approval.notify sent');

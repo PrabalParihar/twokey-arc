@@ -3,9 +3,10 @@ import Link from 'next/link';
 import './landing.css';
 import { AgentDay, dayKind } from '@/components/agent-day';
 import { SignatureCard } from '@/components/signature-card';
-import { explorerTx } from '@/lib/explorer';
+import { explorerTx, TESTNET_EXPLORER } from '@/lib/explorer';
+import { networkName } from '@/lib/format';
 import { publicStats, recentReceipts, type PublicStats, type Receipt } from '@/lib/public-stats';
-import { DEMO_ENABLED, demoCfg } from '@/lib/server';
+import { cfg, DEMO_ENABLED, demoCfg } from '@/lib/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,7 +43,7 @@ function receiptLine(r: Receipt): { label: string; cls: string; why: string } {
 
 async function load(): Promise<{ s: PublicStats | null; tape: Receipt[] }> {
   try {
-    // With the public demo on, visitors' runs count too: they are real Arc Testnet decisions.
+    // With the public demo on, visitors' runs count too: they are real decisions on Arc Testnet.
     const [own, demoStats, ownTape, demoTape] = await Promise.all([
       publicStats(),
       DEMO_ENABLED ? publicStats(demoCfg.orgId) : null,
@@ -83,6 +84,9 @@ export default async function Landing() {
             <a className="nav-i" href="#developers">
               Developers
             </a>
+            <a className="nav-i" href="#next">
+              Roadmap
+            </a>
           </div>
           <div className="lp-cta">
             <Link className="btn btn-dark btn-sm lp-console" href="/app">
@@ -97,7 +101,7 @@ export default async function Landing() {
         <section className="hero">
           <div className="hero-copy">
             <span className="pill">
-              <span className="live-dot" /> Live on Arc Testnet{s ? ` · ${s.paid} payments settled` : ''}
+              <span className="live-dot" /> Live on {networkName(cfg.network)}{s ? ` · ${s.paid} payments settled` : ''}
             </span>
             <h1>Every payment your agent writes needs two signatures.</h1>
             <p className="lede">
@@ -154,7 +158,10 @@ export default async function Landing() {
         <section className="sec" id="live">
           <div className="sec-h">
             <h2>The receipts are real.</h2>
-            <p>Every decision on Twokey&apos;s treasury and the live demo, as it happened on Arc Testnet. Paid lines link to the Arc explorer.</p>
+            <p>
+              Every decision on Twokey&apos;s treasury ({networkName(cfg.network)}) and the live demo (Arc Testnet), as it happened. Paid lines link to the Arc
+              explorer.
+            </p>
           </div>
           <div className="live-grid">
             <div className="card">
@@ -194,7 +201,7 @@ export default async function Landing() {
                           {r.txHash && (
                             <>
                               {' · '}
-                              <a href={explorerTx(r.txHash)} target="_blank" rel="noreferrer">
+                              <a href={explorerTx(r.txHash, r.demo ? TESTNET_EXPLORER : undefined)} target="_blank" rel="noreferrer">
                                 {short(r.txHash)}
                               </a>
                             </>
@@ -296,55 +303,55 @@ export default async function Landing() {
               <tbody>
                 <tr>
                   <td>Per-payment and daily caps</td>
-                  <td>
+                  <td data-label="Wallet caps and allowlists">
                     <span className="st paid">Yes</span>
                   </td>
-                  <td>
+                  <td data-label="With Twokey on top">
                     <span className="st paid">Yes</span>
                   </td>
                 </tr>
                 <tr>
                   <td>Only approved addresses</td>
-                  <td>
+                  <td data-label="Wallet caps and allowlists">
                     <span className="st paid">Yes</span>
                   </td>
-                  <td>
+                  <td data-label="With Twokey on top">
                     <span className="st paid">Each payee pinned to one</span>
                   </td>
                 </tr>
                 <tr>
                   <td>A payment over the cap</td>
-                  <td>
+                  <td data-label="Wallet caps and allowlists">
                     <span className="st">Rejected</span>
                   </td>
-                  <td>
+                  <td data-label="With Twokey on top">
                     <span className="st paid">Goes to you</span>
                   </td>
                 </tr>
                 <tr>
                   <td>Approval tied to amount, address, chain and expiry</td>
-                  <td>
+                  <td data-label="Wallet caps and allowlists">
                     <span className="st">No</span>
                   </td>
-                  <td>
+                  <td data-label="With Twokey on top">
                     <span className="st paid">Sealed with SHA-256</span>
                   </td>
                 </tr>
                 <tr>
                   <td>Agent changes the amount after approval</td>
-                  <td>
+                  <td data-label="Wallet caps and allowlists">
                     <span className="st">No check</span>
                   </td>
-                  <td>
+                  <td data-label="With Twokey on top">
                     <span className="st paid">Void, nothing sent</span>
                   </td>
                 </tr>
                 <tr>
                   <td>Tamper-evident record with Arc tx hashes</td>
-                  <td>
+                  <td data-label="Wallet caps and allowlists">
                     <span className="st">No</span>
                   </td>
-                  <td>
+                  <td data-label="With Twokey on top">
                     <span className="st paid">Hash-chained, verifiable</span>
                   </td>
                 </tr>
@@ -392,9 +399,80 @@ export default async function Landing() {
           </div>
         </section>
 
+        <section className="sec" id="next">
+          <div className="sec-h">
+            <h2>What Twokey signs next.</h2>
+            <p>The same mandate and the same seal, wherever an agent can spend. Each item says where it stands today.</p>
+          </div>
+          <div className="next-grid">
+            <div className="card ink card-stage" aria-label="Agent cards, planned">
+              <div className="stage" aria-hidden="true">
+                <div className="acard">
+                  <div className="acard-top">
+                    <span className="brand-mark" /> Twokey
+                    <span>Agent card</span>
+                  </div>
+                  <div className="acard-chip" />
+                  <div className="acard-num">•••• •••• •••• 4021</div>
+                  <div className="acard-foot">
+                    <span>
+                      <small>Holder</small>ap-agent
+                    </span>
+                    <span>
+                      <small>Funded by</small>USDC on Arc
+                    </span>
+                  </div>
+                </div>
+                <div className="auth a1">
+                  <span>Figma · 24.00</span>
+                  <b className="st paid">Inside mandate</b>
+                </div>
+                <div className="auth a2">
+                  <span>New merchant · 180.00</span>
+                  <b className="st wait">Needs your signature</b>
+                </div>
+                <div className="auth a3">
+                  <span>Signed by you · sealed 6e47 3773</span>
+                  <b className="st run">Approved</b>
+                </div>
+              </div>
+              <div className="next-copy">
+                <span className="st wait">Next</span>
+                <h3>Agent cards</h3>
+                <p>
+                  A virtual card per agent, funded in USDC on Arc. Every card authorization asks the mandate first: known merchants under the cap
+                  clear on their own, anything new or larger waits for your signature, inside the card network&apos;s time limit.
+                </p>
+              </div>
+            </div>
+            <div className="next-list">
+              <div className="card">
+                <span className={`st ${cfg.network === 'ARC' ? 'paid' : 'run'}`}>{cfg.network === 'ARC' ? 'Live' : 'Building now'}</span>
+                <h3>Arc mainnet</h3>
+                <p>Real USDC through a Circle wallet on Arc, with tighter limits and a 5 USDC hard cap per payment. The live demo stays on testnet.</p>
+              </div>
+              <div className="card">
+                <span className="st wait">Next</span>
+                <h3>x402 and Circle&apos;s Agent Stack</h3>
+                <p>When an agent hits an HTTP 402 paywall, Twokey decides before any USDC moves, so paid APIs follow the same mandate as invoices.</p>
+              </div>
+              <div className="card">
+                <span className="st">Planned</span>
+                <h3>Payees on any chain</h3>
+                <p>Pin a supplier on Base or Ethereum and settle from the Arc treasury through CCTP and Gateway, sealed the same way.</p>
+              </div>
+              <div className="card">
+                <span className="st">Planned</span>
+                <h3>Team signatures</h3>
+                <p>Two of three approvers for large payments, a mandate per agent, and approvals in Slack next to Telegram.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section className="end">
           <div>
-            <h2>Countersign a real payment on Arc Testnet.</h2>
+            <h2>Countersign a real payment on Arc.</h2>
             <p>Run the agent, sign one payment, change a cent on another. About a minute, no sign-up.</p>
           </div>
           <Link className="btn btn-ink" href="/demo">
@@ -403,7 +481,7 @@ export default async function Landing() {
         </section>
 
         <footer className="lp-foot">
-          <span>Twokey on Arc. A testnet build: no real money moves.</span>
+          <span>{cfg.network === 'ARC' ? 'Twokey on Arc mainnet. The live demo uses Arc Testnet: no real money moves there.' : 'Twokey on Arc. A testnet build: no real money moves.'}</span>
           <a href="https://twokey.online">twokey.online</a>
         </footer>
       </div>

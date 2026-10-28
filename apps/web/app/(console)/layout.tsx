@@ -4,7 +4,7 @@ import { approvals } from '@twokey-arc/db';
 import { getActiveMandate } from '@twokey-arc/core';
 import { SignOut } from '@/components/client';
 import { NavLinks } from '@/components/nav';
-import { shortAddr } from '@/lib/format';
+import { networkName, shortAddr } from '@/lib/format';
 import { cfg, db } from '@/lib/server';
 import { pageOwner } from '@/lib/session';
 
@@ -26,8 +26,9 @@ export default async function ConsoleLayout({ children }: { children: React.Reac
         <div className="bar-right">
           {process.env.TWOKEY_PREVIEW === 'simulated' && <span className="pill preview-tag">Local preview · simulated Circle</span>}
           <span className="pill">
-            <span className="live-dot" /> Arc Testnet · {cfg.chainId}
+            <span className="live-dot" /> {networkName(cfg.network)} · {cfg.chainId}
           </span>
+          {cfg.network === 'ARC' && <span className="pill lime">Real USDC</span>}
           {mandate && <span className="pill">Circle wallet {shortAddr(mandate.source_wallet.address)}</span>}
           <SignOut csrf={csrf} />
           <span className="av" title={user.displayName}>

@@ -69,3 +69,24 @@ Demo amounts are scaled down: per payment 0.50, daily auto 1.50, and each run au
 - **`UNCONFIRMED`:** reconcile looks the transfer up by `refId`, then replays the same idempotency key (at most 3 times), then marks it `NEEDS_HUMAN`. Check the treasury in the Circle console.
 - **`STUCK` (fee too low):** shown on the dashboard. Acceleration is a later, human-clicked feature.
 - **Balance not moving:** the executor refreshes it every 60 s and after each payment.
+
+## Arc mainnet launch
+Arc mainnet: chain 5042, Circle code `ARC`, RPC https://rpc.mainnet.arc.io, explorer https://explorer.arc.io, USDC `0x3600…0000` (6 dp, also the gas). The owner's treasury moves to mainnet in a new org (`org_mainnet`), with a fresh mandate and audit chain. The public demo stays on testnet: `executor-demo` refuses `ARC`, and the web pins the demo to testnet.
+
+Prabal only (real money and account security):
+1. Circle Console, Live mode: create a LIVE API key, and register the entity secret for live.
+2. Put both in the local `.env` as `CIRCLE_LIVE_API_KEY` and `CIRCLE_LIVE_ENTITY_SECRET`, and on the Railway `executor` service under the same names. The `executor` keeps its `CIRCLE_API_KEY` (TEST): `executor-demo` references it.
+3. After step 4, send about 20 USDC on Arc mainnet to the new treasury address.
+
+Then:
+
+4. Create the mainnet wallets. This moves no money; it writes `config/wallets.arc-mainnet.json`:
+
+```bash
+TWOKEY_NETWORK=mainnet TWOKEY_ALLOW_MAINNET=i-understand-real-usdc pnpm circle:setup
+```
+
+5. Commit the wallets file. Set the same variables on both services: `TWOKEY_NETWORK=mainnet`, `TWOKEY_ALLOW_MAINNET=i-understand-real-usdc` and `TWOKEY_ORG_ID=org_mainnet` on `executor` and on `web`. Then deploy both. On boot, the executor seeds mandate v1 on `ARC` with tighter limits: 0.50 per payment, 2.00 a day, a 5.00 hard max, and 1.00 kept for gas.
+6. Prabal signs in, issues the agent key on `/app/mandate`, and makes the first payment himself:
+   - with `pnpm demo:agent` against https://twokey.si,
+   - or with a 0.10 smoke transfer to his own payee wallet: `TWOKEY_NETWORK=mainnet TWOKEY_ALLOW_MAINNET=i-understand-real-usdc pnpm circle:smoke`.
