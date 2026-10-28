@@ -134,7 +134,7 @@ export interface DecideInput {
   seal?: string;
   reason?: string;
   by: string;
-  via: 'dashboard' | 'telegram';
+  via: 'dashboard' | 'telegram' | 'public-demo';
   /** Telegram carries only a seal prefix; the server checks it against the stored seal. */
   sealPrefix?: string;
 }

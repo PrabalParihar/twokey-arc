@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useHold } from './use-hold';
 
 type Phase = 'idle' | 'signed' | 'paid' | 'void';
 
@@ -28,7 +29,6 @@ export function Cheque({ paidTx, paidSeconds, rosette }: { paidTx: string | null
   const [signedSeal, setSignedSeal] = useState('');
   const [status, setStatus] = useState('');
   const sigRef = useRef<SVGPathElement>(null);
-  const hold = useRef({ p: 0, holding: false, last: 0, raf: 0, doneAt: 0 });
 
   const terms = { payee: 'Brightline Media', address: '0x8569462fa82f8e9ecbfaf6227bbf383d2c8a9b92', amount, token: 'USDC', network: 'ARC-TESTNET', memo: 'BM-7', expires: '2026-10-27T16:36:00Z' };
 
@@ -43,48 +43,32 @@ export function Cheque({ paidTx, paidSeconds, rosette }: { paidTx: string | null
 
   const draw = (p: number) => sigRef.current?.style.setProperty('stroke-dashoffset', String(SIG_LEN * (1 - p)));
 
-  const complete = useCallback(() => {
-    hold.current.doneAt = performance.now();
-    setSignedSeal(sealHex);
-    setPhase('signed');
-    setStatus('Countersigned. Sending on Arc…');
-    window.setTimeout(() => {
-      setPhase((ph) => (ph === 'signed' ? 'paid' : ph));
-      setStatus('Paid on Arc.');
-    }, 1100);
-  }, [sealHex]);
+  const hold = useHold({
+    ms: HOLD_MS,
+    onProgress: draw,
+    onDone: () => {
+      setSignedSeal(sealHex);
+      setPhase('signed');
+      setStatus('Countersigned. Sending on Arc…');
+      window.setTimeout(() => {
+        setPhase((ph) => (ph === 'signed' ? 'paid' : ph));
+        setStatus('Paid on Arc.');
+      }, 1100);
+    },
+  });
 
-  function tick(now: number) {
-    const h = hold.current;
-    const dt = now - h.last;
-    h.last = now;
-    h.p = Math.max(0, Math.min(1, h.p + (h.holding ? dt / HOLD_MS : -dt / 400)));
-    draw(h.p);
-    if (h.p >= 1) {
-      h.holding = false;
-      complete();
-      return;
-    }
-    if (h.holding || h.p > 0) h.raf = requestAnimationFrame(tick);
-  }
   const start = () => {
     if (phase !== 'idle') return;
-    const h = hold.current;
-    h.holding = true;
-    h.last = performance.now();
-    cancelAnimationFrame(h.raf);
-    h.raf = requestAnimationFrame(tick);
+    hold.start();
     setStatus('Keep holding: you are signing these exact terms.');
   };
   const end = () => {
-    const h = hold.current;
-    if (h.holding && h.p < 1) setStatus('Let go too early. Hold until the signature is complete.');
-    h.holding = false;
+    if (hold.end()) setStatus('Let go too early. Hold until the signature is complete.');
   };
 
   const drift = () => {
     setAmount('0.760000');
-    if (phase === 'signed' || phase === 'paid' || hold.current.p > 0) {
+    if (phase === 'signed' || phase === 'paid' || hold.progress() > 0) {
       setPhase('void');
       setStatus('The agent changed the amount after you signed. The seal no longer matches, so nothing is sent.');
     } else {
@@ -93,9 +77,8 @@ export function Cheque({ paidTx, paidSeconds, rosette }: { paidTx: string | null
   };
   const reset = () => {
     // The finger that finished the signature is often still down; its release must not count as "Start over".
-    if (performance.now() - hold.current.doneAt < 600) return;
-    hold.current.p = 0;
-    draw(0);
+    if (hold.justDone()) return;
+    hold.reset();
     setAmount('0.750000');
     setPhase('idle');
     setSignedSeal('');

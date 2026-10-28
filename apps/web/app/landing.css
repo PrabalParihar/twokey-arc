@@ -163,3 +163,61 @@ body:has(.lp), html:has(.lp) { background: #e9efe7; }
   .ledger td:first-child { width: 40%; }
 }
 @media (prefers-reduced-motion: reduce) { .stamp { animation: none; } }
+
+/* Live demo (/demo) */
+.dm-head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 420px); gap: 56px; padding: 36px 0 12px; align-items: start; }
+.dm-head h1 { margin: 22px 0 0; font-size: 50px; line-height: 1; font-weight: 620; font-stretch: 82%; letter-spacing: -.035em; max-width: 15ch; }
+.dm-head .lede { margin: 20px 0 0; font-size: 17px; color: var(--ink-soft); max-width: 46ch; }
+.dm-run { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; margin-top: 28px; font-size: 13.5px; color: var(--ink-soft); }
+.dm-run .cq-hold:disabled { opacity: .5; cursor: default; }
+.dm-err { margin: 12px 0 0; color: var(--stamp); font-size: 14px; }
+.dm-off { padding: 80px 0; font-size: 17px; color: var(--ink-soft); max-width: 52ch; }
+.dm-off a { color: var(--pen); }
+
+.slip { background: var(--tape); padding: 20px 22px 18px; margin-top: 22px; box-shadow: 0 1px 0 #c6d3c9, 0 24px 40px -28px rgba(24, 48, 79, .45); transform: rotate(1.2deg);
+  -webkit-mask: conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) top / 14px 8px repeat-x, linear-gradient(#000 0 0) bottom / 100% calc(100% - 8px) no-repeat;
+  mask: conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) top / 14px 8px repeat-x, linear-gradient(#000 0 0) bottom / 100% calc(100% - 8px) no-repeat; }
+.slip-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding-top: 6px; font-size: 12.5px; color: var(--ink-soft); }
+.slip-top b { font-size: 16px; color: var(--ink); font-weight: 620; }
+.slip dl { margin: 12px 0 0; font-size: 14px; }
+.slip dl > div { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; padding: 9px 0; border-top: 1px dashed #cfcfc6; }
+.slip dt { color: var(--ink-soft); font-size: 13px; }
+.slip dd { margin: 0; display: grid; gap: 2px; }
+.slip code { font-family: var(--f-mono), monospace; font-size: 11.5px; color: var(--ink-soft); }
+.slip a { text-decoration-color: var(--line); }
+
+.dm-bills { margin-top: 56px; display: grid; gap: 40px; }
+.dm-row { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 40px; align-items: start; animation: print .45s cubic-bezier(.2, .8, .3, 1) both; }
+@keyframes print { from { opacity: 0; transform: translateY(-14px); } to { opacity: 1; transform: none; } }
+.dm-note { display: grid; grid-template-columns: 34px 1fr; gap: 10px; padding-top: 18px; }
+.dm-n { width: 26px; height: 26px; border: 1.5px solid var(--ink); border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 600; }
+.dm-note b { font-weight: 620; font-size: 17px; letter-spacing: -.01em; }
+.dm-note p { margin: 6px 0 0; color: var(--ink-soft); font-size: 14.5px; }
+.dm-done { margin: 48px 0 0; padding-top: 22px; border-top: 1.5px solid var(--ink); font-size: 15.5px; color: var(--ink-soft); max-width: 70ch; }
+
+.cheque.stub { padding: 22px 30px 18px; }
+.cheque.stub .cq-payto { margin-top: 16px; }
+.cheque.stub .cq-v { font-size: 24px; }
+.cheque.stub .cq-why { margin-top: 10px; }
+.cheque.stub .cq-seal { overflow-wrap: anywhere; }
+.cheque.stub .stamp { top: auto; bottom: 18px; right: 44px; font-size: 20px; }
+.dm-row .cheque:not(.stub) .stamp { top: auto; bottom: 64px; right: 64px; }
+.cq-foot { position: relative; margin-top: 14px; min-height: 1.4em; font-size: 13px; color: var(--ink-soft); }
+.cq-foot a { color: var(--pen); }
+.stamp.sm { font-size: 26px; }
+.cq-terms { margin-top: 4px; font-size: 13.5px; color: var(--ink-soft); }
+.cq-terms summary { cursor: pointer; color: var(--ink); }
+.cq-terms pre { margin: 10px 0 0; background: var(--cheque); padding: 14px 16px; border-radius: 4px; font-family: var(--f-mono), monospace; font-size: 11.5px; line-height: 1.7; overflow-x: auto; color: var(--ink); }
+.cq-terms p { margin: 8px 0 0; overflow-wrap: anywhere; }
+.cq-terms code { font-family: var(--f-mono), monospace; font-size: 11.5px; }
+
+@media (max-width: 960px) {
+  .dm-head, .dm-row { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .dm-head h1 { font-size: 36px; }
+  .slip { transform: none; }
+  .slip dl > div { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .cheque.stub { padding: 20px 18px 16px; }
+  .cheque.stub .stamp, .dm-row .cheque:not(.stub) .stamp { bottom: 16px; right: 16px; }
+  .dm-note { padding-top: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .dm-row { animation: none; } }

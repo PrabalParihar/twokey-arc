@@ -2,6 +2,7 @@
 // with a simulated CirclePort, so web + API + SDK + demo agent + MCP + UI can be tested over HTTP
 // without Circle keys. Nothing touches Arc. Refuses any database whose name lacks "sim".
 // Usage: DATABASE_URL=…/twokey_sim TWOKEY_WALLETS_FILE=… SIM_AGENT_KEY_FILE=… tsx scripts/local-sim.ts
+// The public demo's executor: add TWOKEY_ORG_ID=org_demo SEED_PROFILE=public-demo (seeded like on Railway).
 import { randomBytes } from 'node:crypto';
 import { writeFileSync } from 'node:fs';
 import pino from 'pino';
@@ -12,6 +13,7 @@ import { migrateDb } from '@twokey-arc/db/migrator';
 import { eq } from 'drizzle-orm';
 import { loadConfig } from '../apps/executor/src/config';
 import { runExecutor } from '../apps/executor/src/run';
+import { seedMandateIfMissing } from '../apps/executor/src/seed';
 import { readWallets, writeWallets } from './lib/wallets';
 
 const url = process.env.DATABASE_URL!;
@@ -31,9 +33,12 @@ if (!w) {
   writeWallets(w);
 }
 
+const log = pino({ name: 'twokey-executor-SIM' });
 const { db, pool } = createDb(url, 2);
 await migrateDb(db);
-if (!(await getActiveMandate(db, 'org_twokey'))) {
+if (process.env.SEED_PROFILE === 'public-demo') {
+  await seedMandateIfMissing(loadConfig(), log);
+} else if (!(await getActiveMandate(db, 'org_twokey'))) {
   const now = new Date();
   await db.transaction((tx) =>
     activateMandate(
@@ -65,7 +70,7 @@ if (!(await getActiveMandate(db, 'org_twokey'))) {
   );
 }
 const [existing] = await db.select().from(agents).where(eq(agents.agentId, 'ap-agent'));
-if (!existing) {
+if (!existing && process.env.SEED_PROFILE !== 'public-demo') {
   const { apiKey } = await createAgent(db, { orgId: 'org_twokey', agentId: 'ap-agent', name: 'Accounts payable agent', pepper: process.env.AGENT_KEY_PEPPER! });
   writeFileSync(process.env.SIM_AGENT_KEY_FILE!, apiKey, { mode: 0o600 });
 }
@@ -102,6 +107,5 @@ const sim: CirclePort = {
   listTransactions: async (i) => [...txs.values()].filter((t) => t.destinationAddress?.toLowerCase() === i.destinationAddress.toLowerCase()),
 };
 
-const log = pino({ name: 'twokey-executor-SIM' });
 log.warn('SIMULATED Circle: no Arc transactions; tx hashes are random');
 await runExecutor(loadConfig(), sim, log);

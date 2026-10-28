@@ -44,6 +44,8 @@ export interface Receipt {
   approved: boolean;
   txHash: string | null;
   seconds: number | null;
+  /** Paid or decided in the public demo, where a visitor countersigns. */
+  demo: boolean;
 }
 
 /** The latest decisions, as receipts for the landing page's live tape. Payee names and short hashes only. */
@@ -65,5 +67,6 @@ export async function recentReceipts(orgId = cfg.orgId, limit = 6): Promise<Rece
     approved: i.approved,
     txHash,
     seconds: i.status === 'PAID' && !i.approved ? (i.updatedAt.getTime() - i.createdAt.getTime()) / 1000 : null,
+    demo: orgId !== cfg.orgId,
   }));
 }

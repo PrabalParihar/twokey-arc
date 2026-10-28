@@ -106,7 +106,7 @@ export const approvals = pgTable(
     status: text('status', { enum: ['PENDING', 'APPROVED', 'REJECTED', 'EXPIRED', 'VOIDED', 'CONSUMED'] }).notNull(),
     expiresAt: ts('expires_at').notNull(),
     decidedBy: text('decided_by'),
-    decidedVia: text('decided_via', { enum: ['dashboard', 'telegram'] }),
+    decidedVia: text('decided_via', { enum: ['dashboard', 'telegram', 'public-demo'] }),
     decidedAt: ts('decided_at'),
     rejectReason: text('reject_reason'),
     voidReason: text('void_reason'),

@@ -1,16 +1,12 @@
 import type { Metadata } from 'next';
-import { Bricolage_Grotesque, Caveat, Martian_Mono, Newsreader } from 'next/font/google';
 import Link from 'next/link';
 import './landing.css';
 import { Cheque } from '@/components/cheque';
 import { Guilloche } from '@/components/guilloche';
 import { explorerTx } from '@/lib/explorer';
+import { paperFonts } from '@/lib/fonts';
+import { DEMO_ENABLED, demoCfg } from '@/lib/server';
 import { publicStats, recentReceipts, type PublicStats, type Receipt } from '@/lib/public-stats';
-
-const grotesk = Bricolage_Grotesque({ subsets: ['latin'], axes: ['wdth', 'opsz'], variable: '--f-grotesk', display: 'swap' });
-const serif = Newsreader({ subsets: ['latin'], style: ['italic'], weight: ['400'], variable: '--f-serif', display: 'swap' });
-const hand = Caveat({ subsets: ['latin'], weight: ['500'], variable: '--f-hand', display: 'swap' });
-const mono = Martian_Mono({ subsets: ['latin'], weight: ['400', '500'], variable: '--f-mono', display: 'swap' });
 
 export const dynamic = 'force-dynamic';
 
@@ -27,7 +23,7 @@ const amt = (a: string) => a.replace(/0{1,4}$/, '');
 function receiptLine(r: Receipt): { label: string; cls: string; why: string } {
   switch (r.status) {
     case 'PAID':
-      return r.approved ? { label: 'PAID', cls: 'st-paid', why: 'countersigned by the owner' } : { label: 'PAID', cls: 'st-paid', why: `inside the mandate · ${r.ruleId}` };
+      return r.approved ? { label: 'PAID', cls: 'st-paid', why: r.demo ? 'countersigned by a demo visitor' : 'countersigned by the owner' } : { label: 'PAID', cls: 'st-paid', why: `inside the mandate · ${r.ruleId}` };
     case 'AWAITING_APPROVAL':
       return { label: 'NEEDS YOU', cls: 'st-wait', why: `waiting for a countersignature · ${r.ruleId}` };
     case 'BLOCKED':
@@ -35,7 +31,7 @@ function receiptLine(r: Receipt): { label: string; cls: string; why: string } {
     case 'VOIDED':
       return { label: 'VOID', cls: 'st-void', why: 'changed after signing · nothing sent' };
     case 'REJECTED':
-      return { label: 'REJECTED', cls: 'st-void', why: 'refused by the owner' };
+      return { label: 'REJECTED', cls: 'st-void', why: r.demo ? 'refused by a demo visitor' : 'refused by the owner' };
     default:
       return { label: r.status, cls: '', why: r.ruleId };
   }
@@ -43,7 +39,15 @@ function receiptLine(r: Receipt): { label: string; cls: string; why: string } {
 
 async function load(): Promise<{ s: PublicStats | null; tape: Receipt[] }> {
   try {
-    const [s, tape] = await Promise.all([publicStats(), recentReceipts(undefined, 6)]);
+    // With the public demo on, visitors' runs print here too: they are real Arc Testnet decisions.
+    const [own, demoStats, ownTape, demoTape] = await Promise.all([
+      publicStats(),
+      DEMO_ENABLED ? publicStats(demoCfg.orgId) : null,
+      recentReceipts(undefined, 6),
+      DEMO_ENABLED ? recentReceipts(demoCfg.orgId, 6) : [],
+    ]);
+    const s = demoStats ? { ...own, paid: own.paid + demoStats.paid, last: own.last ?? demoStats.last } : own;
+    const tape = [...ownTape, ...demoTape].sort((a, b) => b.at.getTime() - a.at.getTime()).slice(0, 6);
     return { s, tape };
   } catch {
     return { s: null, tape: [] };
@@ -53,7 +57,7 @@ async function load(): Promise<{ s: PublicStats | null; tape: Receipt[] }> {
 export default async function Landing() {
   const { s, tape } = await load();
   return (
-    <div className={`lp ${grotesk.variable} ${serif.variable} ${hand.variable} ${mono.variable}`}>
+    <div className={`lp ${paperFonts}`}>
       <Guilloche className="bg" viewBox="0 0 1440 1100" cx={1320} cy={1020} R={430} r={89} d={150} layers={4} color="#b9cbbf" width={0.6} />
       <div className="wrap">
         <nav className="lp-nav" aria-label="Main">
@@ -106,8 +110,8 @@ export default async function Landing() {
           <div>
             <h2>The receipts are real.</h2>
             <p className="lead">
-              This tape prints the latest decisions from Twokey&apos;s treasury on Arc Testnet. Every paid line links to its transaction on the Arc
-              explorer.
+              This tape prints the latest decisions on Arc Testnet, from Twokey&apos;s own treasury and from visitors running the live demo. Every
+              paid line links to its transaction on the Arc explorer.
             </p>
             <div className="tape-facts">
               <div>
