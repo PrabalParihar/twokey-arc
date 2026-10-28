@@ -13,8 +13,8 @@ export const dynamic = 'force-dynamic';
 function Mark() {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <circle cx="8" cy="12" r="4.5" stroke="#d9b46a" strokeWidth="1.8" />
-      <circle cx="16" cy="12" r="4.5" stroke="#f2f2f0" strokeWidth="1.8" />
+      <circle cx="8" cy="12" r="4.5" stroke="#18304f" strokeWidth="1.8" />
+      <circle cx="16" cy="12" r="4.5" stroke="#2c6a4a" strokeWidth="1.8" />
     </svg>
   );
 }

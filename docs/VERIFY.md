@@ -81,3 +81,10 @@ Bugs found and fixed by these runs:
   - d: timeout before Circle
 
   The PRD asks for 20 runs per scenario; this is 5. Re-run `pnpm chaos --runs 20` for the full count (about 1 USDC).
+
+## Public demo on Arc Testnet (twokey.si/demo), Oct 28, 2026
+- `executor-demo` deployed on Railway with `org_demo`; the demo mandate (v1: 0.05 per payment, 5.00 a day, Oceanic and Harbor pinned) was seeded on boot. The demo treasury `0xb78d23d8a7b57cd7dabd1ea5eeda8a2859478251` was funded with 20 USDC from faucet.circle.com (tx `0x366f4379f8a97674eb1d1792dda6596eab5ecddd462a23535fbd9dfb7c07788e`).
+- A browser test against https://twokey.si/demo passed all 13 checks: the in-mandate bill paid by itself; the impostor "Oceanic Freight" was blocked with no Circle call; the browser's own SHA-256 of the canonical terms matched the server's seal; a short press didn't sign; a held countersignature paid on Arc (9.6 s including the pre-send pause); one cent of drift before signing gave 409 and VOID (0.06 → 0.07); drift after signing voided it with no Arc tx; another visitor's drift got 404; cross-site and origin-less POSTs got 403; no horizontal overflow at 390 px.
+- Arc RPC receipts (status `0x1`, from the demo treasury):
+  - `0xd40ec0500c9015a943be805102130df10ea7e10d4719e9f91a6740bddb52e3c2` (block 69446457)
+  - `0x2dfffa3b6d4b4ca0ec668cfa5c28215bbcf329c1b26b3305fe0ecd4cadebe7eb` (block 69446477)
