@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import './landing.css';
-import { Inbox, laneOf } from '@/components/inbox';
+import { Inbox, laneOf, type InboxItem } from '@/components/inbox';
 import { SignatureCard } from '@/components/signature-card';
 import { explorerTx, TESTNET_EXPLORER } from '@/lib/explorer';
 import { networkName } from '@/lib/format';
@@ -19,6 +19,13 @@ export const metadata: Metadata = {
 const ist = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false });
 const short = (a: string | null) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : '');
 const amt = (a: string) => Number(a).toFixed(2);
+
+const EXAMPLES: InboxItem[] = [
+  { id: 'ex1', payee: 'Northwind Ads', amount: '1.20', lane: 'wait', note: 'New payee, over the 0.50 cap. Sealed 6e47 3773, waiting for you.', meta: 'ap-agent · 2 min ago', example: true },
+  { id: 'ex2', payee: 'Brightline Media', amount: '0.75', lane: 'wait', note: 'Over the daily auto cap. Sealed d665 04a9.', meta: 'ap-agent · 9 min ago', example: true },
+  { id: 'ex3', payee: 'Harbor Cloud', amount: '0.40', lane: 'run', note: 'Inside the mandate. Circle transfer created, settling on Arc.', meta: 'about 3 s to final', example: true },
+  { id: 'ex4', payee: 'Oceanic Freight', amount: '0.25', lane: 'run', note: 'Signed by the owner. Seal re-checked, sending.', meta: 'ap-agent · just now', example: true },
+];
 
 /** Why a public receipt landed in its lane, in a few words. */
 function why(r: Receipt): string {
@@ -126,27 +133,86 @@ export default async function Landing() {
                 <i />
                 <i />
               </span>
-              <span>Live inbox · Twokey&apos;s treasury and the public demo</span>
-              <span>{s ? (s.audit.ok ? `audit chain intact · ${s.audit.length}` : 'audit chain broken') : 'offline'}</span>
+              <span className="url">twokey.si/app · inbox</span>
+              <span className="live">
+                <i /> Live from Arc
+              </span>
             </div>
-            <Inbox
-              per={2}
-              items={tape.map((r, i) => ({
-                id: `${i}`,
-                payee: r.payee ?? short(r.address),
-                amount: amt(r.amount),
-                lane: laneOf(r.status),
-                note: why(r),
-                meta: r.txHash ? (
-                  <a href={explorerTx(r.txHash, r.demo ? TESTNET_EXPLORER : undefined)} target="_blank" rel="noreferrer">
-                    {short(r.txHash)}
-                    {r.seconds !== null ? ` · ${r.seconds.toFixed(1)} s` : ''}
-                  </a>
-                ) : (
-                  `${ist.format(r.at)} IST${r.demo ? ' · demo' : ''}`
-                ),
-              }))}
-            />
+            <div className="window-body">
+              <aside className="w-side" aria-hidden="true">
+                <span className="brand">
+                  <span className="brand-mark" /> Twokey
+                </span>
+                <nav>
+                  <span className="on">
+                    Inbox <em>{tape.length}</em>
+                  </span>
+                  <span>Needs you</span>
+                  <span>Mandate</span>
+                  <span>Audit</span>
+                </nav>
+                <small>Agents</small>
+                <div className="w-agent">
+                  <i style={{ background: 'var(--lime)' }} />
+                  ap-agent<span>Twokey treasury</span>
+                </div>
+                <div className="w-agent">
+                  <i style={{ background: '#c99bff' }} />
+                  demo-agent<span>public demo</span>
+                </div>
+                <div className="w-treasury">
+                  <span>Circle wallet on Arc</span>
+                  <b>{s ? s.paid : '—'}</b>
+                  <span>payments settled</span>
+                </div>
+                <div className="w-chain">
+                  <i /> {s ? (s.audit.ok ? 'audit chain intact' : 'audit chain broken') : 'offline'}
+                </div>
+              </aside>
+              <div className="w-main">
+                <Inbox
+                  per={2}
+                  items={[
+                    ...tape.map((r, i) => ({
+                      id: `${i}`,
+                      payee: r.payee ?? short(r.address),
+                      amount: amt(r.amount),
+                      lane: laneOf(r.status),
+                      note: why(r),
+                      meta: r.txHash ? (
+                        <a href={explorerTx(r.txHash, r.demo ? TESTNET_EXPLORER : undefined)} target="_blank" rel="noreferrer">
+                          {short(r.txHash)}
+                          {r.seconds !== null ? ` · ${r.seconds.toFixed(1)} s` : ''}
+                        </a>
+                      ) : (
+                        `${ist.format(r.at)} IST${r.demo ? ' · demo' : ''}`
+                      ),
+                    })),
+                    // Illustrations for the lanes real traffic leaves empty most of the time, tagged as examples.
+                    ...EXAMPLES.filter((e) => !tape.some((r) => laneOf(r.status) === e.lane)),
+                  ]}
+                />
+              </div>
+            </div>
+            {tape.some((r) => r.txHash || r.status === 'BLOCKED') && (
+              <div className="ticker" aria-hidden="true">
+                <div>
+                  {[0, 1].map((k) => (
+                    <span key={k}>
+                      {tape
+                        .filter((r) => r.txHash || r.status === 'BLOCKED' || r.status === 'VOIDED')
+                        .slice(0, 12)
+                        .map((r, i) => (
+                          <span key={i} className={`tk ${laneOf(r.status)}`}>
+                            <b>{r.status === 'PAID' ? 'PAID' : r.status === 'BLOCKED' ? 'BLOCKED' : r.status === 'VOIDED' ? 'VOID' : r.status}</b> {r.payee ?? short(r.address)} {amt(r.amount)}
+                            {r.txHash ? ` · ${short(r.txHash)}` : ' · nothing sent'}
+                          </span>
+                        ))}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
           <div className="hero-facts">
             <div>
