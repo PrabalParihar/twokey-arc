@@ -47,6 +47,31 @@ function feedLine(e: AuditEntry): { text: string; cls: string } {
   }
 }
 
+const usdcNum = (a: string) => displayUsdc(a).replace(/^USDC\s*/, '');
+
+function headline(status: string, approved: boolean): string {
+  switch (status) {
+    case 'AWAITING_APPROVAL':
+      return 'Needs your signature';
+    case 'QUEUED':
+    case 'SUBMITTED':
+      return approved ? 'Signed, sending on Arc' : 'Inside the mandate, sending';
+    case 'PAID':
+      return approved ? 'Paid with your signature' : 'Paid on its own';
+    case 'BLOCKED':
+      return 'Stopped before Circle';
+    case 'VOIDED':
+      return 'Void: the terms changed';
+    case 'REJECTED':
+      return 'Rejected';
+    case 'EXPIRED':
+      return 'Expired unsigned';
+    default:
+      return 'Payment';
+  }
+}
+
+/** The dark card: one payment, why it landed where it did, and (if it waits for you) the hold to sign it. */
 export function PaymentDetail(props: {
   intent: IntentRow;
   approval: ApprovalRow | null;
@@ -64,61 +89,98 @@ export function PaymentDetail(props: {
   const pendingApproval = a?.status === 'PENDING';
   const expiresMin = a ? Math.max(0, Math.round((a.expiresAt.getTime() - Date.now()) / 60_000)) : 0;
   const voidDetail = a?.voidDetail as { amount_from?: string; amount_to?: string; fields?: string[] } | null;
+  const name = i.payeeName ?? (i.destinationAddress ? shortAddr(i.destinationAddress) : 'Unknown payee');
 
   return (
-    <section className="detail" aria-label="Payment detail">
-      <div className="d-top">
-        <span>Accounts payable agent · {timeIst(i.createdAt)} IST</span>
-        {pendingApproval ? <span>Expires in {expiresMin} min</span> : <span className={`st ${chip.cls}`}>{chip.label}</span>}
+    <section className={`focus${i.status === 'VOIDED' ? ' is-void' : ''}`} aria-label="Payment detail">
+      <div className="f-top">
+        <b>{headline(i.status, i.approved)}</b>
+        {pendingApproval ? <span>expires in {expiresMin} min</span> : <span className={`st ${chip.cls}`}>{chip.label}</span>}
       </div>
-      <h2>Pay {i.payeeName ?? (i.destinationAddress ? shortAddr(i.destinationAddress) : 'unknown payee')}</h2>
-      <div className="amt">{displayUsdc(i.amount)}</div>
+      <div className="f-who">
+        <span className="monogram">{name.replace(/^"/, '').slice(0, 1).toUpperCase()}</span>
+        <div>
+          <b>{name}</b>
+          <small>
+            {i.resolvedPayeeId ? 'pinned payee' : 'new payee'}
+            {i.destinationAddress && (
+              <>
+                {' · '}
+                <a href={explorerAddress(i.destinationAddress)} title={i.destinationAddress} target="_blank" rel="noreferrer">
+                  {shortAddr(i.destinationAddress)}
+                </a>
+              </>
+            )}
+            {i.memo ? ` · memo ${i.memo}` : ''}
+          </small>
+        </div>
+      </div>
+      <div className="f-amt">
+        {usdcNum(i.amount)}
+        <em>USDC</em>
+      </div>
 
-      <div className="d-sec">
-        <span>Why it&apos;s {i.lane === 'ADDS_RISK' ? 'here' : i.lane === 'BREAKS_RULE' ? 'blocked' : 'running'}</span>
-        <code className="rule">{i.ruleId}</code>
-      </div>
-      <ul className="trace">
+      <ul className="f-why" aria-label={`Why: ${i.ruleId}`}>
         {i.lane === 'BREAKS_RULE' ? (
-          <li className="no">
-            <i>×</i>
-            {checks[0]?.detail ?? RULE_LINE[i.ruleId] ?? i.ruleId}
-          </li>
+          <li className="no">{checks[0]?.detail ?? RULE_LINE[i.ruleId] ?? i.ruleId}</li>
         ) : (
-          checks.map((c) => (
-            <li key={c.id} className={c.pass ? 'ok' : 'ask'}>
-              <i>{c.pass ? '✓' : '!'}</i>
-              {c.detail}
-            </li>
-          ))
+          checks
+            .filter((c) => !c.pass)
+            .map((c) => (
+              <li key={c.id} className="ask">
+                {c.detail}
+              </li>
+            ))
         )}
-        {i.lane === 'ADDS_RISK' && (
-          <li className="ok">
-            <i>✓</i>No hard rule broken
-          </li>
-        )}
+        {i.lane !== 'BREAKS_RULE' && checks.every((c) => c.pass) && <li>{RULE_LINE[i.ruleId] ?? 'Inside your mandate'}</li>}
+        {i.lane === 'ADDS_RISK' && <li className="dim">No hard rule broken</li>}
       </ul>
 
-      <table className="terms">
+      {a && (
+        <div className="f-seal">
+          <span>Sealed to these exact terms</span>
+          <b>{sealGroups(a.seal)}</b>
+        </div>
+      )}
+
+      {i.status === 'PAID' && at?.txHash && (
+        <div className="f-note paid">
+          Final on Arc ·{' '}
+          <a href={explorerTx(at.txHash)} target="_blank" rel="noreferrer">
+            tx {at.txHash.slice(0, 10)}…{at.txHash.slice(-4)}
+          </a>
+        </div>
+      )}
+      {(i.status === 'QUEUED' || i.status === 'SUBMITTED') && (
+        <div className="f-note">{i.approved ? 'Signed. Twokey checks the seal once more, then sends through the Circle wallet.' : 'Inside the mandate, sending through the Circle wallet.'}</div>
+      )}
+      {i.status === 'BLOCKED' && <div className="f-note block">Refused before it reached Circle. Nothing was sent, and no approval can override it.</div>}
+      {i.status === 'VOIDED' && (
+        <div className="f-note void">
+          {voidDetail?.amount_from
+            ? `The amount changed from ${usdcNum(voidDetail.amount_from)} to ${usdcNum(voidDetail.amount_to!)} after it was sealed`
+            : `The terms changed after they were sealed (${a?.voidReason ?? 'terms changed'})`}
+          . Nothing was sent.
+        </div>
+      )}
+      {i.status === 'REJECTED' && <div className="f-note block">Rejected: {a?.rejectReason}. Nothing was sent.</div>}
+      {i.status === 'EXPIRED' && <div className="f-note void">The approval window closed. Nothing was sent.</div>}
+      {i.status === 'FAILED' && <div className="f-note block">Circle reported a failure. Not retried automatically.</div>}
+      {i.status === 'NEEDS_HUMAN' && <div className="f-note">Circle&apos;s answer was unclear after retries with the same key. Check the treasury in the Circle console.</div>}
+
+      {pendingApproval && a && <ApprovalActions approvalId={a.id} paymentId={i.id} seal={a.seal} csrf={props.csrf} />}
+      {props.demoMode && a && (a.status === 'PENDING' || a.status === 'APPROVED') && <DriftButton paymentId={i.id} csrf={props.csrf} />}
+      {!pendingApproval && a && terms && i.status === 'AWAITING_APPROVAL' && (
+        <p className="f-acts">
+          <Link href={`/app/approvals/${a.id}`}>Open the approval</Link>
+        </p>
+      )}
+
+      <table className="f-meta">
         <tbody>
           <tr>
-            <td>Payee</td>
-            <td>{i.payeeName ?? 'New payee'}{i.resolvedPayeeId ? ' · pinned' : ''}</td>
-          </tr>
-          <tr>
-            <td>Address</td>
-            <td>
-              {i.destinationAddress ? (
-                <span className="addr">
-                  <a href={explorerAddress(i.destinationAddress)} title={i.destinationAddress} target="_blank" rel="noreferrer">
-                    {shortAddr(i.destinationAddress)}
-                  </a>
-                  <CopyButton text={i.destinationAddress} />
-                </span>
-              ) : (
-                '—'
-              )}
-            </td>
+            <td>Rule</td>
+            <td className="mono">{i.ruleId}</td>
           </tr>
           <tr>
             <td>Network</td>
@@ -128,71 +190,46 @@ export function PaymentDetail(props: {
             <td>From</td>
             <td className="mono">Treasury {shortAddr(props.treasury)}</td>
           </tr>
-          <tr>
-            <td>Memo</td>
-            <td>{i.memo ?? '—'}</td>
-          </tr>
+          {i.destinationAddress && (
+            <tr>
+              <td>To</td>
+              <td>
+                <span className="mono">{shortAddr(i.destinationAddress)}</span>
+                <CopyButton text={i.destinationAddress} />
+              </td>
+            </tr>
+          )}
           {at?.circleTransactionId && (
             <tr>
               <td>Circle tx</td>
               <td className="mono">{at.circleTransactionId}</td>
             </tr>
           )}
+          <tr>
+            <td>Requested</td>
+            <td>
+              {i.agentId} · {timeIst(i.createdAt)} IST
+            </td>
+          </tr>
         </tbody>
       </table>
 
-      {a && (
-        <div className="seal">
-          Sealed to these terms · <b>{sealGroups(a.seal)}</b>
-        </div>
-      )}
-
-      {i.status === 'PAID' && at?.txHash && (
-        <div className="note paid">
-          Paid ·{' '}
-          <a href={explorerTx(at.txHash)} target="_blank" rel="noreferrer">
-            tx {at.txHash.slice(0, 10)}… ↗
-          </a>
-        </div>
-      )}
-      {(i.status === 'QUEUED' || i.status === 'SUBMITTED') && <div className="note">{i.approved ? 'Approved · sending on Arc…' : 'Inside the mandate · sending on Arc…'}</div>}
-      {i.status === 'BLOCKED' && <div className="note block">Refused before it reached Circle. Nothing was sent, and no approval can override it.</div>}
-      {i.status === 'VOIDED' && (
-        <div className="note void">
-          This approval no longer matches
-          {voidDetail?.amount_from ? `: the amount changed from ${displayUsdc(voidDetail.amount_from).slice(5)} to ${displayUsdc(voidDetail.amount_to!).slice(5)}` : `: ${a?.voidReason ?? 'terms changed'}`}. Nothing was sent.
-        </div>
-      )}
-      {i.status === 'REJECTED' && <div className="note block">Rejected: {a?.rejectReason}. Nothing was sent.</div>}
-      {i.status === 'EXPIRED' && <div className="note void">The approval window closed. Nothing was sent.</div>}
-      {i.status === 'FAILED' && <div className="note block">Circle reported a failure. Not retried automatically.</div>}
-      {i.status === 'NEEDS_HUMAN' && <div className="note wait">Circle&apos;s answer was unclear after retries with the same key. Check the treasury in the Circle console.</div>}
-
-      {pendingApproval && a && <ApprovalActions approvalId={a.id} paymentId={i.id} seal={a.seal} csrf={props.csrf} />}
-      {props.demoMode && a && (a.status === 'PENDING' || a.status === 'APPROVED') && <DriftButton paymentId={i.id} csrf={props.csrf} />}
-      {!pendingApproval && a && terms && i.status === 'AWAITING_APPROVAL' && (
-        <p className="hint">
-          <Link href={`/app/approvals/${a.id}`}>Open the approval</Link>
-        </p>
-      )}
-
-      <div className="d-sec">
-        <span>Record</span>
-        <Link className="hint" href="/app/audit">
-          Audit log →
-        </Link>
-      </div>
-      <ul className="feed">
-        {feed.map((e) => {
-          const f = feedLine(e);
-          return (
-            <li key={e.seq} className={f.cls}>
-              <time>{timeIst(e.at)}</time>
-              {f.text}
-            </li>
-          );
-        })}
-      </ul>
+      <details className="f-rec" open={feed.length <= 8}>
+        <summary>
+          Record · {feed.length} audit entries · <Link href="/app/audit">full log</Link>
+        </summary>
+        <ul className="feed">
+          {feed.map((e) => {
+            const f = feedLine(e);
+            return (
+              <li key={e.seq} className={f.cls}>
+                <time>{timeIst(e.at)}</time>
+                {f.text}
+              </li>
+            );
+          })}
+        </ul>
+      </details>
     </section>
   );
 }

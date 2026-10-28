@@ -1,23 +1,17 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { DemoItem, DemoState } from '@/lib/public-demo';
 import { explorerAddress, explorerTx } from '@/lib/explorer';
-import { useHold } from './use-hold';
+import { HoldButton } from './hold-button';
 
-const HOLD_MS = 1400;
-const SIG_LEN = 560;
 const DONE = new Set(['PAID', 'BLOCKED', 'VOIDED', 'REJECTED', 'EXPIRED', 'FAILED', 'CANCELLED', 'NEEDS_HUMAN']);
 
 const short = (a: string | null) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : '—');
 const six = (a: string) => Number(a).toFixed(6);
 const two = (a: string) => Number(a).toFixed(2);
 const groups = (seal: string) => seal.replace(/^sha256:/, '').slice(0, 12).replace(/(.{4})(?=.)/g, '$1 ');
-const CENTS = ['Zero', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'];
-const words = (a: string) => {
-  const c = Math.round(Number(a) * 100);
-  return Math.abs(Number(a) * 100 - c) < 1e-6 && c <= 10 ? `${CENTS[c]} cent${c === 1 ? '' : 's'} in USDC` : `${six(a)} USDC`;
-};
+const initial = (name: string | null) => (name ?? '?').replace(/^"/, '').slice(0, 1).toUpperCase();
 
 async function call(path: string, body?: unknown) {
   const res = await fetch(`/api/public-demo/${path}`, {
@@ -36,9 +30,25 @@ async function sha256Hex(text: string) {
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
+const CHIP: Record<string, [string, string]> = {
+  PAID: ['paid', 'Paid on Arc'],
+  QUEUED: ['run', 'Sending'],
+  SUBMITTED: ['run', 'Sending'],
+  AWAITING_APPROVAL: ['wait', 'Needs you'],
+  BLOCKED: ['block', 'Blocked'],
+  VOIDED: ['void', 'Void'],
+  REJECTED: ['block', 'Refused'],
+  EXPIRED: ['void', 'Expired'],
+  FAILED: ['block', 'Failed'],
+};
+const Chip = ({ status }: { status: string }) => {
+  const [cls, label] = CHIP[status] ?? ['', status];
+  return <span className={`st ${cls}`}>{label}</span>;
+};
+
 /** The public demo: run the agent, watch two bills decide themselves, countersign the third. */
-export function DemoDesk({ initial }: { initial: DemoState }) {
-  const [s, setS] = useState(initial);
+export function DemoDesk({ initial: first }: { initial: DemoState }) {
+  const [s, setS] = useState(first);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
 
@@ -73,32 +83,33 @@ export function DemoDesk({ initial }: { initial: DemoState }) {
   if (!s.enabled || !m) {
     return (
       <p className="dm-off">
-        The live demo is switched off right now. The <a href="/#live">receipt tape</a> on the home page shows real decisions on Arc Testnet.
+        The live demo is switched off right now. The <a href="/#live">receipts</a> on the home page show real decisions on Arc Testnet.
       </p>
     );
   }
 
   const auto = s.items.find((i) => i.step === 'auto');
   const impostor = s.items.find((i) => i.step === 'impostor');
-  const cheque = s.items.find((i) => i.step === 'countersign');
+  const sign = s.items.find((i) => i.step === 'countersign');
   const finished = s.items.length > 0 && !live;
 
   return (
     <>
       <section className="dm-head">
         <div>
-          <h1>Countersign a real payment on Arc Testnet.</h1>
+          <span className="pill">
+            <span className="live-dot" /> Real Circle wallet · Arc Testnet
+          </span>
+          <h1 style={{ marginTop: 20 }}>Countersign a real payment on Arc Testnet.</h1>
           <p className="lede">
             Behind this page is a Circle wallet with test USDC and a mandate that lets an agent pay cents on its own. Run the agent: it sends three
             bills. Two decide themselves. The third waits for your signature.
           </p>
           <div className="dm-run">
-            <button type="button" className="cq-hold" onClick={run} disabled={busy || live || s.runsLeftToday === 0}>
+            <button type="button" className="btn btn-ink" onClick={run} disabled={busy || live || s.runsLeftToday === 0}>
               {busy ? 'Sending the bills…' : s.items.length ? 'Run the agent again' : 'Run the agent'}
             </button>
-            <span>
-              {s.runsLeftToday > 0 ? `${s.runsLeftToday} runs left today` : 'Today’s budget is spent; it resets at 00:00 UTC'}
-            </span>
+            <span className="pill">{s.runsLeftToday > 0 ? `${s.runsLeftToday} runs left today` : 'Today’s budget is spent; it resets at 00:00 UTC'}</span>
           </div>
           {err && (
             <p className="dm-err" role="alert">
@@ -106,10 +117,10 @@ export function DemoDesk({ initial }: { initial: DemoState }) {
             </p>
           )}
         </div>
-        <aside className="slip" aria-label="The demo mandate">
-          <div className="slip-top">
-            <b>The mandate</b>
-            <span>version {m.version}, signed by the owner</span>
+        <aside className="card mandate-card" aria-label="The demo mandate">
+          <div className="card-h">
+            <h3>The mandate</h3>
+            <span>v{m.version}, signed by the owner</span>
           </div>
           <dl>
             <div>
@@ -136,90 +147,114 @@ export function DemoDesk({ initial }: { initial: DemoState }) {
                 <a href={explorerAddress(m.treasury)} target="_blank" rel="noreferrer">
                   <code>{short(m.treasury)}</code>
                 </a>
-                {s.balance && <span>{Number(s.balance).toFixed(2)} USDC on Arc Testnet</span>}
+                {s.balance && <span>{Number(s.balance).toFixed(2)} USDC</span>}
               </dd>
             </div>
           </dl>
         </aside>
       </section>
 
-      {s.items.length > 0 && (
+      {s.items.length === 0 ? (
+        <section className="dm-steps" aria-label="What will happen">
+          <div className="card">
+            <span className="st paid">Paid</span>
+            <b>A bill inside the mandate</b>
+            <p>Oceanic Freight is pinned and 0.02 is under the cap, so Twokey pays it through the Circle wallet without asking.</p>
+          </div>
+          <div className="card">
+            <span className="st block">Blocked</span>
+            <b>A known name at a new address</b>
+            <p>The classic invoice-redirect scam. Refused before Circle is called, and no approval can override it.</p>
+          </div>
+          <div className="card ink">
+            <span className="st wait">Needs you</span>
+            <b>A new payee, over the cap</b>
+            <p style={{ color: 'var(--faint)' }}>Sealed to its exact terms and held for your signature. Sign it, or let the agent change a cent first.</p>
+          </div>
+        </section>
+      ) : (
         <section className="dm-bills" aria-label="The agent's three bills" aria-live="polite">
-          {auto && (
-            <Row n={1} item={auto} onChange={refresh} title={auto.status === 'PAID' ? 'Paid on its own' : 'Inside the mandate, so it runs'}>
-              Oceanic Freight is a pinned payee and {two(auto.amount)} is under the {two(m.perTx)} cap. Twokey sent it through the Circle wallet
-              without asking anyone.
-            </Row>
-          )}
-          {impostor && (
-            <Row n={2} item={impostor} onChange={refresh} title="Refused before it reached Circle">
-              Same name as a pinned payee, different address: the pattern of an invoice-redirect scam. A pinned payee can only be paid at its own
-              address, and no approval can override that.
-            </Row>
-          )}
-          {cheque && (
-            <Row n={3} item={cheque} onChange={refresh} title={titleFor(cheque)}>
-              {noteFor(cheque, two(m.perTx))}
-            </Row>
-          )}
+          <div className="dm-col">
+            {auto && (
+              <Bill n={1} item={auto} title={auto.status === 'PAID' ? 'Paid on its own' : 'Inside the mandate, so it runs'}>
+                Oceanic Freight is a pinned payee and {two(auto.amount)} is under the {two(m.perTx)} cap. Twokey sent it through the Circle wallet
+                without asking anyone.
+              </Bill>
+            )}
+            {impostor && (
+              <Bill n={2} item={impostor} title="Refused before it reached Circle">
+                Same name as a pinned payee, different address: the pattern of an invoice-redirect scam. A pinned payee can only be paid at its own
+                address, and no approval can override that.
+              </Bill>
+            )}
+          </div>
+          {sign && <SignCard item={sign} cap={two(m.perTx)} onChange={refresh} />}
         </section>
       )}
 
       {finished && (
         <p className="dm-done">
           That was the whole loop: two decisions made by the mandate, one by you, each written to a hash-chained audit log
-          {[auto, cheque].some((i) => i?.txHash) ? ', with the Arc transactions linked above' : ''}. Run it again, or try the other ending this time.
+          {[auto, sign].some((i) => i?.txHash) ? ', with the Arc transactions linked above' : ''}. Run it again, or try the other ending this time.
         </p>
       )}
     </>
   );
 }
 
-/** One bill: what happened, in words, beside the document it happened to. */
-function Row({ n, item, title, onChange, children }: { n: number; item: DemoItem; title: string; onChange: () => Promise<void>; children: React.ReactNode }) {
+function TxLine({ item }: { item: DemoItem }) {
+  if (item.txHash) {
+    return (
+      <a href={explorerTx(item.txHash)} target="_blank" rel="noreferrer">
+        Arc tx {short(item.txHash)}
+        {item.seconds !== null ? ` · final in ${item.seconds.toFixed(1)} s` : ''}
+      </a>
+    );
+  }
+  if (item.status === 'QUEUED' || item.status === 'SUBMITTED') return <span>Sending through the Circle wallet…</span>;
+  if (item.status === 'BLOCKED') return <span>Nothing was sent. No Circle call was made.</span>;
+  if (item.status === 'FAILED' || item.status === 'NEEDS_HUMAN') return <span>Circle did not confirm this one; it is not retried.</span>;
+  return null;
+}
+
+/** A bill that decides itself: what happened, the payment, and its Arc transaction. */
+function Bill({ n, item, title, children }: { n: number; item: DemoItem; title: string; children: React.ReactNode }) {
   return (
-    <div className="dm-row" style={{ animationDelay: `${(n - 1) * 220}ms` }}>
-      <div className="dm-note">
-        <span className="dm-n">{n}</span>
-        <div>
-          <b>{title}</b>
-          <p>{children}</p>
-        </div>
+    <div className="card bill" style={{ animationDelay: `${(n - 1) * 220}ms` }}>
+      <div className="card-h">
+        <h3>
+          <span className="bill-n">{n}</span>
+          {title}
+        </h3>
+        <Chip status={item.status} />
       </div>
-      {item.step === 'countersign' ? <LiveCheque item={item} onChange={onChange} /> : <Stub item={item} />}
+      <p className="bill-note">{children}</p>
+      <div className="bill-pay">
+        <span className="monogram" style={{ background: '#fff' }}>
+          {initial(item.payee)}
+        </span>
+        <span style={{ minWidth: 0 }}>
+          <b>{item.payee ?? 'Unknown payee'}</b>
+          <small>{item.address ?? '—'}</small>
+        </span>
+        <span className="amt">{two(item.amount)}</span>
+      </div>
+      <div className="bill-foot">
+        <TxLine item={item} />
+      </div>
     </div>
   );
 }
 
-function noteFor(i: DemoItem, cap: string) {
+function headline(i: DemoItem) {
   switch (i.status) {
     case 'AWAITING_APPROVAL':
-      return `Brightline Media is not in the mandate and ${two(i.amount)} is over the ${cap} cap. Twokey sealed the exact terms. Hold to sign them, or let the agent change a cent first and see what happens.`;
+      return 'Needs your signature';
     case 'QUEUED':
     case 'SUBMITTED':
-      return 'Twokey pauses a few seconds, rebuilds the terms from the payment as it will be sent, checks your seal against them, then calls Circle.';
+      return 'Signed, sending on Arc';
     case 'PAID':
-      return 'Your signature covered these exact terms, and they still matched when Twokey sent the payment through the Circle wallet.';
-    case 'VOIDED':
-      return 'The payment no longer matched the terms you were shown, so your signature does not cover it. No Circle call was made.';
-    case 'REJECTED':
-      return 'You refused it. Nothing was sent, and the refusal is in the audit log.';
-    case 'EXPIRED':
-      return 'Nobody signed within ten minutes, so it expired. Nothing was sent.';
-    default:
-      return 'Circle did not confirm this payment, and Twokey does not retry it on its own.';
-  }
-}
-
-function titleFor(i: DemoItem) {
-  switch (i.status) {
-    case 'AWAITING_APPROVAL':
-      return 'Waiting for your countersignature';
-    case 'QUEUED':
-    case 'SUBMITTED':
-      return 'Countersigned, sending on Arc';
-    case 'PAID':
-      return 'Paid with your countersignature';
+      return 'Paid with your signature';
     case 'VOIDED':
       return 'Void: the terms changed';
     case 'REJECTED':
@@ -231,81 +266,16 @@ function titleFor(i: DemoItem) {
   }
 }
 
-function Stamp({ item }: { item: DemoItem }) {
-  switch (item.status) {
-    case 'PAID':
-      return (
-        <div className="stamp paid-stamp">
-          Paid on Arc
-          <small>{item.seconds !== null ? `${item.seconds.toFixed(1)} s` : 'final'}</small>
-        </div>
-      );
-    case 'BLOCKED':
-      return <div className="stamp void-stamp sm">Blocked</div>;
-    case 'VOIDED':
-      return <div className="stamp void-stamp">Void</div>;
-    case 'REJECTED':
-      return <div className="stamp void-stamp sm">Refused</div>;
-    case 'EXPIRED':
-      return <div className="stamp void-stamp sm">Expired</div>;
-    default:
-      return null;
-  }
-}
-
-function TxLine({ item }: { item: DemoItem }) {
-  if (item.txHash) {
-    return (
-      <a href={explorerTx(item.txHash)} target="_blank" rel="noreferrer">
-        Arc tx {short(item.txHash)}
-      </a>
-    );
-  }
-  if (item.status === 'QUEUED' || item.status === 'SUBMITTED') return <span>Sending through the Circle wallet…</span>;
-  if (item.status === 'BLOCKED') return <span>Nothing was sent. No Circle call was made.</span>;
-  if (item.status === 'FAILED' || item.status === 'NEEDS_HUMAN') return <span>Circle did not confirm this one; it is not retried.</span>;
-  return null;
-}
-
-/** A compact cheque for the bills that decide themselves. */
-function Stub({ item }: { item: DemoItem }) {
-  return (
-    <div className={`cheque stub${item.status === 'BLOCKED' ? ' is-void' : ''}`}>
-      <div className="cq-top">
-        <span>
-          <b>Treasury</b> {item.memo}
-        </span>
-      </div>
-      <div className="cq-payto">
-        <span className="cq-k">Pay to the order of</span>
-        <span className="cq-v">{item.payee ?? 'Unknown payee'}</span>
-        <span className="cq-amt">USDC {six(item.amount)}</span>
-      </div>
-      <div className="cq-why">
-        <span className="cq-seal">to {item.address ?? '—'}</span>
-      </div>
-      <div className="cq-foot">
-        <TxLine item={item} />
-      </div>
-      <Stamp item={item} />
-    </div>
-  );
-}
-
 /** The one the visitor signs. Everything it shows comes from the server; the hold only sends the seal. */
-function LiveCheque({ item, onChange }: { item: DemoItem; onChange: () => Promise<void> }) {
-  const sigRef = useRef<SVGPathElement>(null);
+function SignCard({ item, cap, onChange }: { item: DemoItem; cap: string; onChange: () => Promise<void> }) {
   const [status, setStatus] = useState('');
   const [busy, setBusy] = useState(false);
   const [match, setMatch] = useState<boolean | null>(null);
   const a = item.approval;
   const pending = item.status === 'AWAITING_APPROVAL' && a?.status === 'PENDING';
-  const signed = a?.status === 'APPROVED';
-  const inGrace = item.status === 'QUEUED' && signed;
+  const inGrace = item.status === 'QUEUED' && a?.status === 'APPROVED';
   const sealedAmount = a ? (JSON.parse(a.canonical) as { amount: string }).amount : item.amount;
   const drifted = Number(sealedAmount) !== Number(item.amount);
-
-  const draw = (p: number) => sigRef.current?.style.setProperty('stroke-dashoffset', String(SIG_LEN * (1 - p)));
 
   // The browser recomputes the seal from the canonical terms, so nobody has to take the server's word for it.
   useEffect(() => {
@@ -317,16 +287,6 @@ function LiveCheque({ item, onChange }: { item: DemoItem; onChange: () => Promis
     };
   }, [a]);
 
-  useEffect(() => {
-    if (signed || item.status === 'PAID') draw(1);
-  }, [signed, item.status]);
-
-  const hold = useHold({
-    ms: HOLD_MS,
-    onProgress: draw,
-    onDone: () => void act('countersign', { seal: a!.seal }, 'Countersigned. Twokey checks the seal once more, then sends.'),
-  });
-
   async function act(path: string, body: Record<string, unknown>, ok: string) {
     setBusy(true);
     try {
@@ -334,116 +294,112 @@ function LiveCheque({ item, onChange }: { item: DemoItem; onChange: () => Promis
       setStatus(r.from ? `The agent changed the amount from ${six(r.from)} to ${six(r.to!)}.` : r.note ? `${ok} ${r.note}` : ok);
     } catch (e) {
       setStatus((e as Error).message.replace(/^./, (c) => c.toUpperCase()) + '.');
-      hold.reset();
     }
     await onChange();
     setBusy(false);
   }
 
-  const voidDetail = item.voidDetail;
+  const v = item.voidDetail;
   return (
-    <div className="cq-wrap">
-      <div className={`cheque${item.status === 'VOIDED' ? ' is-void' : ''}`}>
-        <div className="cq-top">
-          <span>
-            <b>Treasury</b> Circle wallet on Arc Testnet
-          </span>
-          <span>{item.memo}</span>
-        </div>
-        <div className="cq-payto">
-          <span className="cq-k">Pay to the order of</span>
-          <span className="cq-v">{item.payee ?? 'New payee'}</span>
-          <span className="cq-amt">USDC {six(item.amount)}</span>
-        </div>
-        <div className="cq-words">{words(item.amount)}</div>
-        <div className="cq-why">
-          {item.failed.map((f) => (
-            <span key={f.id}>{f.detail}</span>
-          ))}
-          {a && (
-            <span className="cq-seal">
-              Sealed {groups(a.seal)}
-              {match === true && ' · your browser recomputed it: matches'}
-              {match === false && ' · does not match the terms'}
-            </span>
-          )}
-        </div>
-        <div className="cq-sigs">
-          <div className="cq-sig">
-            <span className="cq-hand">demo-agent</span>
-            <span className="cq-line">Requested by the agent</span>
-          </div>
-          <div className="cq-sig">
-            <svg viewBox="0 0 320 64" aria-hidden="true">
-              <path
-                ref={sigRef}
-                d="M10 44 C 30 8, 46 58, 66 28 S 100 10, 110 38 S 142 54, 160 20 C 168 8, 180 50, 198 34 S 236 14, 252 40 C 262 56, 280 22, 306 30"
-                fill="none"
-                stroke="#24427a"
-                strokeWidth="2.6"
-                strokeLinecap="round"
-                strokeDasharray={SIG_LEN}
-                strokeDashoffset={SIG_LEN}
-              />
-            </svg>
-            <span className="cq-line">Your countersignature</span>
-          </div>
-        </div>
-        <div className="cq-foot">
-          <TxLine item={item} />
-        </div>
-        <Stamp item={item} />
+    <section className={`focus bill${item.status === 'VOIDED' ? ' is-void' : ''}`} style={{ animationDelay: '440ms' }} aria-label="Bill 3: needs your signature">
+      <div className="f-top">
+        <b style={{ display: 'flex', alignItems: 'center' }}>
+          <span className="bill-n">3</span>
+          {headline(item)}
+        </b>
+        {pending && a ? <span>expires {new Date(a.expiresAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span> : <Chip status={item.status} />}
       </div>
+      <p className="bill-note">
+        {pending
+          ? `A new payee, and over the ${cap} cap. Twokey sealed the exact terms. Hold to sign them, or let the agent change a cent first and see what happens.`
+          : item.status === 'PAID'
+            ? 'Your signature covered these exact terms, and they still matched when Twokey sent the payment through the Circle wallet.'
+            : item.status === 'VOIDED'
+              ? 'The payment no longer matched the terms you were shown, so your signature does not cover it. No Circle call was made.'
+              : inGrace
+                ? 'Twokey pauses a few seconds, rebuilds the terms from the payment as it will be sent, checks your seal against them, then calls Circle.'
+                : ''}
+      </p>
+      <div className="f-who">
+        <span className="monogram">{initial(item.payee)}</span>
+        <div>
+          <b>{item.payee ?? 'New payee'}</b>
+          <small>
+            new payee · {short(item.address)} · {item.memo}
+          </small>
+        </div>
+      </div>
+      <div className="f-amt">
+        {two(item.amount)}
+        <em>USDC</em>
+      </div>
+      <ul className="f-why">
+        {item.failed.map((f) => (
+          <li key={f.id} className="ask">
+            {f.detail}
+          </li>
+        ))}
+      </ul>
+      {a && (
+        <div className="f-seal">
+          <span>{match === true ? 'Sealed · your browser recomputed it: matches' : match === false ? 'Sealed · does not match the terms' : 'Sealed to these exact terms'}</span>
+          <b>{groups(a.seal)}</b>
+        </div>
+      )}
 
-      {(pending || inGrace) && (
-        <div className="cq-actions">
-          {pending && (
-            <button
-              type="button"
-              className="cq-hold"
-              disabled={busy}
-              onPointerDown={(e) => {
-                e.preventDefault();
-                hold.start();
-                setStatus('Keep holding: you are signing the sealed terms.');
-              }}
-              onPointerUp={() => hold.end() && setStatus('Let go too early. Hold until the signature is complete.')}
-              onPointerLeave={() => hold.end()}
-              onPointerCancel={() => hold.end()}
-              onKeyDown={(e) => {
-                if ((e.key === 'Enter' || e.key === ' ') && !e.repeat) {
-                  e.preventDefault();
-                  hold.start();
-                }
-              }}
-              onKeyUp={() => hold.end()}
-            >
-              Hold to countersign
-            </button>
+      {pending && drifted && (
+        <div className="f-note void">
+          The agent changed the amount to {six(item.amount)} after Twokey sealed {six(sealedAmount)}. Sign anyway and see.
+        </div>
+      )}
+      {item.status === 'VOIDED' && (
+        <div className="f-note void">
+          {v?.amount_from
+            ? `The amount changed from ${six(v.amount_from)} to ${six(v.amount_to!)} after it was sealed. The seal no longer matches, so nothing was sent.`
+            : 'The terms changed after they were sealed, so nothing was sent.'}
+        </div>
+      )}
+      {item.status === 'PAID' && (
+        <div className="f-note paid">
+          {item.txHash ? (
+            <a href={explorerTx(item.txHash)} target="_blank" rel="noreferrer">
+              Final on Arc · tx {short(item.txHash)}
+            </a>
+          ) : (
+            'Final on Arc'
           )}
-          <button type="button" className="cq-ghost" disabled={busy} onClick={() => !hold.justDone() && void act('drift', {}, '')}>
+          {item.seconds !== null && ` · ${item.seconds.toFixed(1)} s after your signature, counting the pause before sending`}
+        </div>
+      )}
+      {(item.status === 'REJECTED' || item.status === 'EXPIRED') && <div className="f-note block">Nothing was sent.</div>}
+
+      {pending && (
+        <HoldButton
+          key={`hold-${a?.id}`}
+          disabled={busy}
+          onStart={() => setStatus('Keep holding: you are signing the sealed terms.')}
+          onEarly={() => setStatus('Let go too early. Hold until the knob reaches the end.')}
+          onDone={() => void act('countersign', { seal: a!.seal }, 'Signed. Twokey checks the seal once more, then sends.')}
+        />
+      )}
+      {inGrace && <div className="f-note">Signed. Sending in a few seconds…</div>}
+      {(pending || inGrace) && (
+        <div className="f-acts">
+          <button type="button" disabled={busy} onClick={() => void act('drift', {}, '')}>
             Let the agent change a cent
           </button>
           {pending && (
-            <button type="button" className="cq-ghost" disabled={busy} onClick={() => void act('refuse', {}, 'Refused. Nothing was sent.')}>
+            <button type="button" disabled={busy} onClick={() => void act('refuse', {}, 'Refused. Nothing was sent.')}>
               Refuse
             </button>
           )}
         </div>
       )}
-
-      <p className="cq-status" role="status" aria-live="polite">
-        {status && !DONE.has(item.status) && <>{status} </>}
-        {pending && drifted && `The agent changed the amount to ${six(item.amount)} after Twokey sealed ${six(sealedAmount)}. Sign anyway and see.`}
-        {inGrace && !status && 'Countersigned. Twokey waits a few seconds, rebuilds the terms, checks the seal again, then sends.'}
-        {item.status === 'VOIDED' &&
-          (voidDetail?.amount_from
-            ? `The amount changed from ${six(voidDetail.amount_from)} to ${six(voidDetail.amount_to!)} after it was sealed. The seal no longer matches, so the approval is void and nothing was sent.`
-            : 'The terms changed after they were sealed, so the approval is void and nothing was sent.')}
-        {item.status === 'PAID' && item.seconds !== null && `Final on Arc ${item.seconds.toFixed(1)} s after your countersignature, counting the pause before sending.`}
+      <p className="f-status" role="status" aria-live="polite">
+        {!DONE.has(item.status) && status}
       </p>
       {a && (
-        <details className="cq-terms">
+        <details className="f-terms">
           <summary>What you are signing</summary>
           <pre>{JSON.stringify(JSON.parse(a.canonical), null, 2)}</pre>
           <p>
@@ -451,6 +407,6 @@ function LiveCheque({ item, onChange }: { item: DemoItem; onChange: () => Promis
           </p>
         </details>
       )}
-    </div>
+    </section>
   );
 }

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import { paperFonts } from '@/lib/fonts';
+import { fonts } from '@/lib/fonts';
 
 export const metadata: Metadata = {
   title: 'Twokey on Arc',
@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={paperFonts}>
+    <html lang="en" className={fonts}>
       <body>{children}</body>
     </html>
   );

@@ -28,7 +28,7 @@ export default async function ApprovalPage({ params }: { params: Promise<{ id: s
           </p>
         </div>
       </div>
-      <div style={{ maxWidth: 560 }}>
+      <div style={{ maxWidth: 620 }}>
         <PaymentDetail
           intent={found.intent}
           approval={found.approval}

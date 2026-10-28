@@ -116,45 +116,57 @@ export function ApprovalActions({ approvalId, paymentId, seal, csrf }: { approva
     }
   }
 
+  // The knob rides the fill, so it needs the button's width.
+  useEffect(() => {
+    const b = btn.current;
+    if (!b) return;
+    const set = () => b.style.setProperty('--w', `${b.offsetWidth}px`);
+    set();
+    const ro = new ResizeObserver(set);
+    ro.observe(b);
+    return () => ro.disconnect();
+  }, []);
+
   return (
     <>
-      <div className="acts">
-        <button className="btn btn-dark" type="button" disabled={busy} onClick={() => setRejecting((v) => !v)}>
+      <button
+        ref={btn}
+        className="hold"
+        type="button"
+        disabled={busy}
+        aria-describedby="hold-hint"
+        onPointerDown={(e) => {
+          e.preventDefault();
+          start();
+        }}
+        onPointerUp={end}
+        onPointerLeave={end}
+        onPointerCancel={end}
+        onClick={(e) => {
+          // Keyboard (Enter / Space) arrives as a click with detail 0: approve at once.
+          if (e.detail === 0) void approve();
+        }}
+      >
+        <span className="knob" aria-hidden="true">
+          ✓
+        </span>
+        <span className="lbl">Hold to countersign</span>
+      </button>
+      <div className="f-acts">
+        <span id="hold-hint">Press and hold, or press Enter, to sign these exact terms.</span>
+        <button type="button" disabled={busy} onClick={() => setRejecting((v) => !v)}>
           Reject
         </button>
-        <button
-          ref={btn}
-          className="btn approve"
-          type="button"
-          disabled={busy}
-          aria-describedby="hold-hint"
-          onPointerDown={(e) => {
-            e.preventDefault();
-            start();
-          }}
-          onPointerUp={end}
-          onPointerLeave={end}
-          onPointerCancel={end}
-          onClick={(e) => {
-            // Keyboard (Enter / Space) arrives as a click with detail 0: approve at once.
-            if (e.detail === 0) void approve();
-          }}
-        >
-          Hold to approve
-        </button>
       </div>
-      <p className="hint" id="hold-hint">
-        Press and hold, or press Enter, to approve these exact terms.
-      </p>
       {rejecting && (
         <form className="reject-form" onSubmit={reject}>
           <input className="input" aria-label="Reason for rejecting" placeholder="Reason (required)" value={reason} onChange={(e) => setReason(e.target.value)} autoFocus />
-          <button className="btn btn-dark" type="submit" disabled={busy || !reason.trim()}>
+          <button className="btn" type="submit" disabled={busy || !reason.trim()}>
             Reject
           </button>
         </form>
       )}
-      <p className="hint" role="status" aria-live="polite">
+      <p className="f-status" role="status" aria-live="polite">
         {status}
       </p>
     </>
@@ -167,7 +179,7 @@ export function VerifyChain({ initial }: { initial: { ok: boolean; length: numbe
   return (
     <div className="verify">
       <button
-        className="btn btn-dark btn-sm"
+        className="btn btn-ink btn-sm"
         type="button"
         disabled={busy}
         onClick={async () => {
@@ -191,10 +203,9 @@ export function DriftButton({ paymentId, csrf }: { paymentId: string; csrf: stri
   const router = useRouter();
   const [msg, setMsg] = useState('');
   return (
-    <p className="hint">
+    <p className="f-acts">
       <button
         type="button"
-        className="copy"
         onClick={async () => {
           try {
             const r = (await post(`/api/demo/drift/${paymentId}`, csrf, { delta: '0.50' })) as unknown as { from: string; to: string };
@@ -205,9 +216,9 @@ export function DriftButton({ paymentId, csrf }: { paymentId: string; csrf: stri
           router.refresh();
         }}
       >
-        Demo: drift +0.50
-      </button>{' '}
-      {msg}
+        Demo: let the agent add 0.50
+      </button>
+      <span>{msg}</span>
     </p>
   );
 }
@@ -255,7 +266,7 @@ export function SignOut({ csrf }: { csrf: string }) {
   return (
     <button
       type="button"
-      className="copy"
+      className="btn btn-sm btn-dark"
       onClick={async () => {
         await fetch('/api/auth/logout', { method: 'POST', headers: { 'x-csrf-token': csrf } });
         router.replace('/login');
@@ -272,12 +283,12 @@ export function IssueAgentKey({ csrf }: { csrf: string }) {
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
   return (
-    <div className="panel" style={{ marginTop: 16 }}>
+    <div className="panel ink" style={{ marginTop: 14 }}>
       <h3>Agent key (accounts payable agent)</h3>
       {key ? (
         <>
           <p>Copy it now: it won&apos;t be shown again. The previous key no longer works.</p>
-          <p className="mono" style={{ color: 'var(--text)', overflowWrap: 'anywhere', margin: '8px 0' }}>{key}</p>
+          <p className="mono" style={{ color: 'var(--lime)', overflowWrap: 'anywhere', margin: '10px 0' }}>{key}</p>
           <CopyButton text={key} />
         </>
       ) : (
@@ -285,8 +296,8 @@ export function IssueAgentKey({ csrf }: { csrf: string }) {
           <p>Issuing a new key revokes the old one. The agent can only request payments; it can never approve.</p>
           <button
             type="button"
-            className="btn btn-dark btn-sm"
-            style={{ marginTop: 10 }}
+            className="btn btn-lime btn-sm"
+            style={{ marginTop: 12 }}
             disabled={busy}
             onClick={async () => {
               setBusy(true);

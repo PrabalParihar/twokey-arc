@@ -62,14 +62,14 @@ export default async function AuditPage() {
         </div>
         <VerifyChain initial={v} />
       </div>
-      <div className="page">
+      <div className="page card">
         {[...entries].reverse().map((e) => (
           <div key={e.seq} className="audit-line">
             <span className="seq">#{e.seq}</span>
             <time>{timeIst(e.at)}</time>
             <div>
               <div>
-                {line(e)} <span className="mono" style={{ color: 'var(--faint)', fontSize: 11.5 }}>· {e.subject_id}</span>
+                {line(e)} <span className="mono" style={{ color: 'var(--faint)' }}>· {e.subject_id}</span>
               </div>
               <div className="h">
                 {e.verb} · {e.entry_hash.slice(0, 23)}… ← {e.prev_hash.slice(0, 15)}…
