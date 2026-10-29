@@ -15,3 +15,4 @@ docs/screenshots/*.tmp.png
 .claude/
 *.tsbuildinfo
 next-env.d.ts.bak
+out/
