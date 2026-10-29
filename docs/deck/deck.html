@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Twokey on Arc · Deck</title>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  @page { size: 1600px 900px; margin: 0; }
+  :root { --bg:#f7f7f8; --ink:#0f1012; --ink2:#1d1f23; --soft:#6c6f76; --faint:#a3a6ad; --line:#ececef; --lime:#d6f45b; --amber:#f5a524; --blue:#3b82f6; --green:#16a34a; --red:#e5484d; --treasury:#2a5bff; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: Geist, system-ui, sans-serif; color: var(--ink); }
+  .s { width: 1600px; height: 900px; padding: 72px 96px; background: var(--bg); position: relative; overflow: hidden; page-break-after: always; display: flex; flex-direction: column; }
+  .s.dark { background: var(--ink); color: #fff; }
+  .n { position: absolute; right: 96px; bottom: 48px; font: 400 16px 'Geist Mono', monospace; color: var(--faint); }
+  .brand { display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 22px; }
+  .mark { width: 26px; height: 26px; border-radius: 8px; background: var(--ink); position: relative; }
+  .dark .mark { background: #fff; }
+  .mark::after { content: ''; position: absolute; inset: 7px; border-radius: 4px; background: var(--lime); }
+  h1 { font-size: 84px; line-height: 1.02; letter-spacing: -.04em; margin: 0; font-weight: 600; }
+  h2 { font-size: 54px; line-height: 1.06; letter-spacing: -.03em; margin: 0 0 36px; font-weight: 600; max-width: 1200px; }
+  p.lede { font-size: 26px; line-height: 1.45; color: var(--soft); max-width: 1000px; margin: 28px 0 0; }
+  .dark p.lede { color: #b9bcc3; }
+  .grid { display: grid; gap: 22px; }
+  .g2 { grid-template-columns: 1fr 1fr; } .g3 { grid-template-columns: repeat(3, 1fr); } .g4 { grid-template-columns: repeat(4, 1fr); }
+  .card { background: #fff; border-radius: 22px; padding: 26px 28px; box-shadow: 0 1px 0 var(--line), 0 14px 30px -22px rgba(15,16,18,.35); }
+  .card b { display: block; font-size: 24px; margin-bottom: 8px; letter-spacing: -.01em; }
+  .card span { font-size: 19px; color: var(--soft); line-height: 1.45; }
+  .lane { border-radius: 22px; padding: 26px; }
+  .lane .t { font-weight: 600; font-size: 24px; margin-bottom: 10px; }
+  .lane p { margin: 0; font-size: 19px; line-height: 1.45; color: var(--ink2); }
+  .big { font-size: 64px; font-weight: 600; letter-spacing: -.04em; line-height: 1; }
+  .big em { font-style: normal; font-size: 24px; color: var(--soft); margin-left: 6px; letter-spacing: 0; }
+  .stat span { display: block; margin-top: 10px; font-size: 19px; color: var(--soft); }
+  table { border-collapse: collapse; width: 100%; font-size: 20px; }
+  th, td { text-align: left; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+  th { font-weight: 500; color: var(--soft); font-size: 17px; }
+  td.y { color: var(--green); font-weight: 600; } td.no { color: var(--faint); }
+  tr.us td { background: #fbfdf0; font-weight: 600; }
+  .flow { display: flex; align-items: center; gap: 16px; font-size: 20px; }
+  .box { background: #fff; border-radius: 18px; padding: 18px 22px; box-shadow: 0 1px 0 var(--line), 0 14px 30px -22px rgba(15,16,18,.35); }
+  .box.ink { background: var(--ink); color: #fff; }
+  .box.blue { background: var(--treasury); color: #fff; }
+  .arrow { color: var(--faint); font-size: 28px; }
+  .mono { font-family: 'Geist Mono', monospace; }
+  .pill { display: inline-block; padding: 6px 14px; border-radius: 99px; background: var(--lime); color: var(--ink); font-size: 17px; font-weight: 600; }
+  .ms td:first-child { font-weight: 600; width: 260px; }
+</style>
+</head>
+<body>
+
+<section class="s dark">
+  <div class="brand"><span class="mark"></span> Twokey</div>
+  <div style="margin-top:auto">
+    <span class="pill">Live on Arc mainnet</span>
+    <h1 style="margin-top:28px">The two-key rule for AI agents<br>that move USDC.</h1>
+    <p class="lede">Routine payments run on their own. Risky ones wait for a human key sealed to the exact terms. Rule-breakers are refused. Every decision is on a hash-chained record. Built on Circle Wallets and Arc.</p>
+  </div>
+  <div style="margin-top:56px;display:flex;gap:40px;font:400 19px 'Geist Mono',monospace;color:#9a9da4">
+    <span>twokey.si</span><span>github.com/PrabalParihar/twokey-arc</span><span>Circle Grants · 2026 Cohort 2</span>
+  </div>
+</section>
+
+<section class="s">
+  <h2>Agents can pay bills now. Nobody can safely let them.</h2>
+  <div class="grid g3">
+    <div class="card"><b>A wallet is all or nothing</b><span>Give an agent wallet credentials and it can pay anyone, any amount. Take them away and it can't do the job.</span></div>
+    <div class="card"><b>Caps are yes or no</b><span>Spend limits and allowlists either let a payment through or fail it. The payments that matter most, a new vendor or a bigger invoice, need a person in the loop.</span></div>
+    <div class="card"><b>The fraud is in the details</b><span>"Our wallet changed, pay this address." The name matches; the address doesn't. Business email compromise works the same way on agents.</span></div>
+  </div>
+  <p class="lede">Finance teams need three things before they let an agent touch a treasury: a mandate the agent can't exceed, a person who signs the exceptions, and a record they can check without trusting the agent.</p>
+  <div class="n">02</div>
+</section>
+
+<section class="s">
+  <h2>Twokey decides every payment, in one of four lanes.</h2>
+  <div class="grid g4">
+    <div class="lane" style="background:#e5f6eb"><div class="t">✓ Inside the mandate</div><p>Pays on its own through Circle Wallets on Arc, in seconds, with the tx hash on the record.</p></div>
+    <div class="lane" style="background:#fff4e0"><div class="t">✋ Needs you</div><p>New payee or over a cap: waits for a hold, sealed with SHA-256 over amount, address, chain, token, memo and expiry.</p></div>
+    <div class="lane" style="background:#e8f0fe"><div class="t">↻ Sending</div><p>Right before paying, the executor re-classifies and re-verifies the seal. One changed cent voids it.</p></div>
+    <div class="lane" style="background:#fdeaea"><div class="t">⊘ Refused</div><p>A pinned name at a new address, over the hard max, or short on USDC for amount + gas: blocked before any Circle call.</p></div>
+  </div>
+  <p class="lede">The agent holds only a Twokey key. It can ask; it can never approve, and it never sees a wallet id. Approvals happen in the console or on Telegram.</p>
+  <div class="n">03</div>
+</section>
+
+<section class="s">
+  <h2>Circle and Arc are the rails, not an add-on.</h2>
+  <div class="flow" style="margin-top:10px">
+    <div class="box">AI agent<br><small class="mono" style="color:#6c6f76">SDK · MCP · HTTP</small></div><span class="arrow">→</span>
+    <div class="box ink">Twokey policy<br><small class="mono" style="color:#a3a6ad">mandate · seal · audit</small></div><span class="arrow">→</span>
+    <div class="box ink">Executor<br><small class="mono" style="color:#a3a6ad">only holder of Circle keys</small></div><span class="arrow">→</span>
+    <div class="box blue">Circle developer-<br>controlled wallets</div><span class="arrow">→</span>
+    <div class="box" style="background:var(--lime)">Arc<br><small class="mono">USDC · gas in USDC</small></div>
+  </div>
+  <div class="grid g2" style="margin-top:40px">
+    <div class="card"><b>Circle Wallets</b><span class="mono" style="font-size:17px">createWalletSet · createWallets · createTransaction (idempotency key written ahead) · getTransaction · getWalletTokenBalance · listTransactions · v2 webhooks, signature-verified · faucet</span></div>
+    <div class="card"><b>Arc</b><span>Settlement for every payment. Gas is USDC from the same wallet, so the policy keeps amount + fee ≤ balance and a reserve. Sub-second finality: COMPLETE is final when we record it.</span></div>
+  </div>
+  <div class="n">04</div>
+</section>
+
+<section class="s">
+  <h2>Shipped, live and verifiable.</h2>
+  <div class="grid g4">
+    <div class="card stat"><div class="big">5042</div><span>Arc mainnet: Twokey's own treasury on Circle LIVE keys, 5 USDC hard cap</span></div>
+    <div class="card stat"><div class="big">~1<em>min</em></div><span>to a self-serve sandbox: own Circle wallet, test USDC, mandate, agent key</span></div>
+    <div class="card stat"><div class="big">20<em>/ 20</em></div><span>crash and timeout runs paid exactly once on Arc Testnet</span></div>
+    <div class="card stat"><div class="big">182</div><span>tests: unit and Postgres integration; policy at 100% branch coverage</span></div>
+  </div>
+  <div class="grid g3" style="margin-top:22px">
+    <div class="card"><b>twokey.si/demo</b><span>Anyone countersigns a real Arc Testnet payment, no sign-up: 29 visitor payments settled so far.</span></div>
+    <div class="card"><b>twokey.si/signup</b><span>Self-serve sandboxes on Arc Testnet, with Telegram approvals and the agent's badge.</span></div>
+    <div class="card"><b>Open source</b><span>github.com/PrabalParihar/twokey-arc, with a Circle transcript mapping every call to file and line.</span></div>
+  </div>
+  <div class="n">05</div>
+</section>
+
+<section class="s">
+  <h2>Caps exist everywhere. Sealed approvals don't.</h2>
+  <table>
+    <tr><th></th><th>Spend caps</th><th>Allow / block lists</th><th>Human second key per payment</th><th>Approval voids on any change</th><th>Payee pinned to its address</th><th>Hash-chained audit with Arc tx</th></tr>
+    <tr><td>Circle Agent Stack policies</td><td class="y">✓</td><td class="y">✓</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td></tr>
+    <tr><td>Typical agent-wallet spend controls</td><td class="y">✓</td><td class="y">✓</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td></tr>
+    <tr class="us"><td>Twokey</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td></tr>
+  </table>
+  <p class="lede">Twokey is complementary to Circle's own controls: it sits in front of the same wallet, as defense in depth, and turns "denied" into "ask a person".</p>
+  <div class="n">06</div>
+</section>
+
+<section class="s">
+  <h2>Go to market: start free, move to mainnet on your own Circle account.</h2>
+  <div class="grid g3">
+    <div class="card"><b>Who</b><span>Finance and ops teams putting AI agents on accounts payable, vendor payouts and API spend; and the agent builders who sell to them.</span></div>
+    <div class="card"><b>How</b><span>Self-serve sandbox on testnet → design partners on mainnet with their own Circle Live account, so Twokey never custodies anyone's funds.</span></div>
+    <div class="card"><b>Where it spreads</b><span>One SDK call or an MCP tool for any agent framework; Telegram approvals for the person; an open-source core teams can audit.</span></div>
+  </div>
+  <p class="lede">No paying users or revenue yet, stated plainly. The next 10 weeks are about three design partners moving real USDC on Arc mainnet.</p>
+  <div class="n">07</div>
+</section>
+
+<section class="s">
+  <h2>Milestones and the ask: $10,000 USDC.</h2>
+  <table class="ms">
+    <tr><th>Milestone</th><th>What exists at completion</th><th>Circle products</th><th>When</th></tr>
+    <tr><td>M0 · done</td><td>Live on Arc mainnet for Twokey's treasury; self-serve testnet sandbox; public demo</td><td>Wallets, USDC</td><td>Oct 29, 2026</td></tr>
+    <tr><td>M1 · $4,000</td><td>Design partners on their own Circle Live accounts; passkey step-up on approve; required webhooks; 3 partners moving real USDC on Arc mainnet</td><td>Wallets, USDC</td><td>weeks 1–4</td></tr>
+    <tr><td>M2 · $6,000</td><td>Cross-chain payees under the same mandate, sealed into the approval; open quickstart, example agent and MCP package</td><td>CCTP V2, Gateway, App Kits</td><td>weeks 5–10</td></tr>
+    <tr><td>M3 · stretch</td><td>Agent cards and paid APIs under the same mandate: card authorizations and x402 calls ask the mandate first</td><td>Agent Stack, Nanopayments</td><td>after M2</td></tr>
+  </table>
+  <div class="n">08</div>
+</section>
+
+<section class="s dark">
+  <h2>Prabal Pratap Singh, founder</h2>
+  <div class="grid g2" style="gap:40px">
+    <p class="lede" style="margin:0">Senior full-stack engineer in AI agents and blockchain, six years shipping. Full Stack Blockchain Lead at Warlands (CopyPool: Uniswap V4 liquidity automation, live on Base mainnet). Before that Mai Labs (15+ production contracts, $2M+ TVL), KalpStudio (5K+ gasless meta-transactions), CredShields.</p>
+    <p class="lede" style="margin:0">10 hackathon wins since 2021, including ETHGlobal, ETHIndia, Polygon BUIDL IT and Encode Club Bangkok, and a $10K Gitcoin grant. Building Twokey with WitLabs (Witlabs Services Pvt Ltd), Lucknow, India.</p>
+  </div>
+  <div style="margin-top:auto;display:flex;gap:40px;font:400 20px 'Geist Mono',monospace;color:#d6f45b">
+    <span>prabal.pro</span><span>linkedin.com/in/0xprabal</span><span>x.com/0xPrabalParihar</span><span>github.com/PrabalParihar</span>
+  </div>
+  <div class="n">09</div>
+</section>
+
+</body>
+</html>
