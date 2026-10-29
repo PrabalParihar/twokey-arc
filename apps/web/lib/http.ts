@@ -2,7 +2,7 @@ import 'server-only';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { authenticateAgent, csrfOk, getSession, TwokeyError } from '@twokey-arc/core';
-import { db, ownerReady } from './server';
+import { cfg, db, ownerReady } from './server';
 
 export const SESSION_COOKIE = 'tk_session';
 export const CSRF_COOKIE = 'tk_csrf';
@@ -38,6 +38,8 @@ export async function requireAgent(req: Request, opts: { limited?: boolean } = {
   if (!pepper) throw new TwokeyError('misconfigured', 500, 'AGENT_KEY_PEPPER is not set');
   const agent = await authenticateAgent(db(), pepper, req.headers.get('authorization'));
   if (!agent) throw new TwokeyError('unauthorized', 401, 'a valid agent key is required');
+  // A key from another org (an old testnet org, the demo) must never spend from this deployment's treasury.
+  if (agent.orgId !== cfg.orgId) throw new TwokeyError('unauthorized', 401, 'this agent key belongs to another workspace');
   if (opts.limited && rateLimited(agent.agentId)) throw new TwokeyError('rate_limited', 429, 'too many requests; 30 per minute per agent');
   return agent;
 }

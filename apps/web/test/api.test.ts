@@ -75,6 +75,14 @@ describe('agent API', () => {
     expect(r.status).toBe(401);
   });
 
+  it("refuses a key from another workspace, so it can never spend this treasury", async () => {
+    const { createAgent } = await import('@twokey-arc/core');
+    const { apiKey } = await createAgent(h.db, { orgId: 'org_elsewhere', agentId: 'stray-agent', name: 'Old testnet agent', pepper: 'test-pepper' });
+    const headers = { ...agentHeaders(), authorization: `Bearer ${apiKey}` };
+    const r = await routes.payments.POST(req('POST', '/api/v1/payments', { payee: { payeeId: 'pay_oceanic' }, amount: '0.10' }, headers));
+    expect(r.status).toBe(401);
+  });
+
   it('accepts a request (202) and replays it (200) with the same Idempotency-Key', async () => {
     const headers = agentHeaders();
     const body = { payee: { payeeId: 'pay_oceanic' }, amount: '1.00', memo: 'INV-1' };
