@@ -51,7 +51,7 @@ function why(r: Receipt): string {
   }
 }
 
-async function load(): Promise<{ s: PublicStats | null; tape: Receipt[] }> {
+async function load(): Promise<{ s: PublicStats | null; own: number; demo: number; tape: Receipt[] }> {
   try {
     // With the public demo on, visitors' runs count too: they are real decisions on Arc Testnet.
     const [own, demoStats, ownTape, demoTape] = await Promise.all([
@@ -62,14 +62,14 @@ async function load(): Promise<{ s: PublicStats | null; tape: Receipt[] }> {
     ]);
     const s = demoStats ? { ...own, paid: own.paid + demoStats.paid, last: own.last ?? demoStats.last } : own;
     const tape = [...ownTape, ...demoTape].sort((a, b) => b.at.getTime() - a.at.getTime());
-    return { s, tape };
+    return { s, own: own.paid, demo: demoStats?.paid ?? 0, tape };
   } catch {
-    return { s: null, tape: [] };
+    return { s: null, own: 0, demo: 0, tape: [] };
   }
 }
 
 export default async function Landing() {
-  const { s, tape } = await load();
+  const { s, own, demo, tape } = await load();
   return (
     <div className="lp">
       <div className="wrap">
@@ -96,7 +96,10 @@ export default async function Landing() {
         <section className="hero">
           <span className="pill">
             <span className="live-dot" /> Live on {networkName(cfg.network)}
-            {s ? ` · ${s.paid} payments settled` : ''}
+            {/* Counted per network: demo payments settle on testnet and must not read as mainnet volume. */}
+            {s && cfg.network !== 'ARC' ? ` · ${own + demo} payments settled` : ''}
+            {s && cfg.network === 'ARC' && own > 0 ? ` · ${own} settled` : ''}
+            {s && cfg.network === 'ARC' && demo > 0 ? ` · ${demo} in the testnet demo` : ''}
           </span>
           <h1 style={{ marginTop: 22 }}>
             Your agent pays the{' '}
