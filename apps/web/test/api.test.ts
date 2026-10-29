@@ -251,3 +251,13 @@ describe('self-serve sandbox', () => {
     vi.unstubAllGlobals();
   });
 });
+
+describe('client IP for rate limits', () => {
+  it('trusts the edge (X-Real-IP, else the last X-Forwarded-For hop), never the first hop a client can write', async () => {
+    const { clientIp } = await import('../lib/http');
+    const h = (o: Record<string, string>) => ({ get: (n: string) => o[n] ?? null });
+    expect(clientIp(h({ 'x-real-ip': '203.0.113.9', 'x-forwarded-for': '1.1.1.1, 203.0.113.9' }))).toBe('203.0.113.9');
+    expect(clientIp(h({ 'x-forwarded-for': '1.1.1.1, 198.51.100.4' }))).toBe('198.51.100.4');
+    expect(clientIp(h({}))).toBe('local');
+  });
+});

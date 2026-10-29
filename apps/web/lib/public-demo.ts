@@ -4,6 +4,7 @@ import { cookies, headers } from 'next/headers';
 import { and, count, desc, eq, gte, inArray, like } from 'drizzle-orm';
 import { approvals, attempts, paymentIntents } from '@twokey-arc/db';
 import { decideApproval, driftDemo, getActiveMandate, latestBalance, requestPayment, TwokeyError } from '@twokey-arc/core';
+import { clientIp } from './http';
 import { db, demoCfg, DEMO_ENABLED, deps } from './server';
 
 /**
@@ -82,7 +83,7 @@ export async function runAgent(req: Request): Promise<{ run: string }> {
   await assertSameOrigin(req);
   const v = (await visitor(true))!;
   const h = await headers();
-  const ip = (h.get('x-forwarded-for') ?? '').split(',')[0]!.trim() || 'local';
+  const ip = clientIp(h);
   if (limited(`ip:${ip}`) || limited(`v:${v}`)) throw new TwokeyError('rate_limited', 429, `${RUNS_PER_HOUR} runs an hour per visitor; try again later`);
   if ((await runsToday()) >= DAILY_RUNS) throw new TwokeyError('daily_cap', 429, 'today’s demo budget is spent; it resets at 00:00 UTC');
 
