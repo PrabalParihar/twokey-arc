@@ -1,0 +1,23 @@
+{
+  "network": "ARC",
+  "walletSetId": "83ff2f6d-81bc-5645-9e64-b5312382e58e",
+  "createdAt": "2026-10-28T20:44:29.910Z",
+  "treasury": {
+    "id": "e3c9f7df-41d0-5c9b-852b-6a4172646daa",
+    "address": "0x6d57604cbefd802a0d74ae5bb0461891711adbf2"
+  },
+  "payees": {
+    "oceanic": {
+      "id": "49f928c9-0b99-51aa-a0d2-6eeacab6a627",
+      "address": "0xf2e5d3f105d054767899b01983424992534e4b16"
+    },
+    "harbor": {
+      "id": "23215c75-47ee-51b3-8f99-d559327a1d81",
+      "address": "0xdeb4fc7cb2d297a15acde0ff775d535f2aa4473a"
+    },
+    "brightline": {
+      "id": "96e010b7-2206-55fb-84d5-245f2ceec02c",
+      "address": "0x24683bfc28f82745ac8d0e4c37394bd6020f3426"
+    }
+  }
+}

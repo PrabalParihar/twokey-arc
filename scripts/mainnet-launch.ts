@@ -28,7 +28,11 @@ const min = Number(process.argv[2] ?? 5);
 const circle = circleClientFromEnv();
 console.log(`\nwaiting for at least ${min} USDC on Arc mainnet at ${w.treasury.address}\n${net.explorerUrl}/address/${w.treasury.address}`);
 for (let i = 0; i < 480; i++) {
-  const bal = Number(await getUsdcBalance(circle, w.treasury.id, net.usdc));
+  // A laptop sleep or DNS blip should not end a two-hour wait.
+  const bal = await getUsdcBalance(circle, w.treasury.id, net.usdc).then(Number, (err: Error & { code?: string }) => {
+    console.log(`balance check failed (${err.code ?? err.message}), retrying`);
+    return 0;
+  });
   if (bal >= min) {
     console.log(`funded: ${bal} USDC. Ready to switch Railway to mainnet.`);
     process.exit(0);
