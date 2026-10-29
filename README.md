@@ -9,7 +9,10 @@ Twokey sits in front of a Circle developer-controlled wallet on Arc and handles 
 
 Every decision goes on a hash-chained record.
 
-This repo is a testnet build: Arc Testnet (chain `5042002`), USDC, Circle Wallets. No real money moves.
+**Live:**
+- **https://twokey.si**: Twokey's own treasury runs on **Arc mainnet** (chain `5042`) through Circle developer-controlled wallets, with a 5 USDC hard cap per payment.
+- **https://twokey.si/signup**: anyone can open a free **sandbox** on Arc Testnet (chain `5042002`). It comes with its own Circle wallet and test USDC, a mandate you sign, Telegram approvals, and an agent key.
+- **https://twokey.si/demo**: countersign a real Arc Testnet payment without signing up.
 
 ```
 agent ──twokey_pay──▶ Twokey API ──classify──▶ policy (pure)
@@ -116,7 +119,7 @@ MCP (Claude Code, Cursor):
 
 ## Status
 
-`pnpm demo:run` and `pnpm chaos` call real Circle Wallets on Arc Testnet. Each live run is saved in `docs/demo-runs/`, and [docs/VERIFY.md](docs/VERIFY.md) records what has and hasn't been checked live yet. Mainnet is milestone M1 and is refused by this build (`arcNetwork()` throws on mainnet). Cross-chain payees through CCTP V2 / Gateway are milestone M2 and are not implemented here. There are no users or volume yet.
+`pnpm demo:run` and `pnpm chaos` call real Circle Wallets on Arc Testnet. Each live run is saved in `docs/demo-runs/`, and [docs/VERIFY.md](docs/VERIFY.md) records what has and hasn't been checked live yet. Mainnet (milestone M1) is live for Twokey's own treasury. It needs two deliberate settings (`TWOKEY_NETWORK=mainnet` and `TWOKEY_ALLOW_MAINNET`) plus separate `CIRCLE_LIVE_*` keys, and self-serve sandboxes always stay on testnet. Cross-chain payees through CCTP V2 / Gateway are milestone M2 and are not implemented here. There are no users or volume yet.
 
 ## How Twokey relates to Circle's own controls
 
