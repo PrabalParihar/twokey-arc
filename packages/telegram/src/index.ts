@@ -73,5 +73,12 @@ export const editMessage = (token: string, chatId: string, messageId: number, ht
 export const answerCallback = (token: string, callbackQueryId: string, text: string) =>
   call(token, 'answerCallbackQuery', { callback_query_id: callbackQueryId, text });
 
+export const sendMessage = (token: string, chatId: string, html: string) =>
+  call(token, 'sendMessage', { chat_id: chatId, text: html, parse_mode: 'HTML', disable_web_page_preview: true });
+
+/** The bot's @username, for the t.me link a sandbox owner opens to link their chat. */
+export const getBotUsername = async (token: string) => (await call<{ username: string }>(token, 'getMe', {})).username;
+
+/** Buttons (callback_query) and `/start <code>` messages, which link a sandbox workspace's approver chat. */
 export const setWebhook = (token: string, url: string, secret: string) =>
-  call(token, 'setWebhook', { url, secret_token: secret, allowed_updates: ['callback_query'] });
+  call(token, 'setWebhook', { url, secret_token: secret, allowed_updates: ['callback_query', 'message'] });

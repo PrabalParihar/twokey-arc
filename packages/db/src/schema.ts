@@ -194,6 +194,28 @@ export const users = pgTable('users', {
   displayName: text('display_name').notNull(),
   passwordHash: text('password_hash').notNull(),
   role: text('role', { enum: ['OWNER'] }).notNull(),
+  /** The workspace this user owns. Null for the deployment's own owner, who runs TWOKEY_ORG_ID. */
+  orgId: text('org_id'),
+  createdAt: createdAt(),
+});
+
+/**
+ * Self-serve sandbox workspaces. Each gets its own Circle wallet on Arc Testnet, created by the
+ * testnet executor; the deployment's own org (TWOKEY_ORG_ID) and the public demo have no row here.
+ */
+export const orgs = pgTable('orgs', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  kind: text('kind', { enum: ['sandbox'] }).notNull(),
+  status: text('status', { enum: ['PROVISIONING', 'READY', 'FAILED'] }).notNull(),
+  network: text('network').notNull(),
+  walletId: text('wallet_id'),
+  walletAddress: text('wallet_address'),
+  faucetRequestedAt: ts('faucet_requested_at'),
+  provisionError: text('provision_error'),
+  telegramLinkCode: text('telegram_link_code').unique(),
+  telegramSkipped: boolean('telegram_skipped').notNull().default(false),
+  signupIp: text('signup_ip'),
   createdAt: createdAt(),
 });
 

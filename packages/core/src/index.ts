@@ -7,3 +7,4 @@ export * from './payments';
 export * from './executor';
 export * from './auth';
 export * from './pgboss';
+export * from './workspace';

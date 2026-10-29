@@ -1,11 +1,11 @@
 import { getActiveMandate, latestBalance } from '@twokey-arc/core';
-import { handle, json, requireOwner } from '@/lib/http';
-import { cfg, db } from '@/lib/server';
+import { handle, json, requireOwnerCtx } from '@/lib/http';
+import { db } from '@/lib/server';
 
 /** Treasury address and its one USDC balance (the executor snapshots it from Circle; web has no Circle access). */
 export function GET(req: Request) {
   return handle(async () => {
-    await requireOwner(req);
+    const { cfg } = await requireOwnerCtx(req);
     const m = await getActiveMandate(db(), cfg.orgId);
     if (!m) return json({ treasury: null });
     const bal = await latestBalance(db(), m.source_wallet.circle_wallet_id);

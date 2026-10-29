@@ -6,7 +6,9 @@ import { assertNoCircleSecrets } from '../lib/boot';
 
 // A cookie jar standing in for next/headers, so route handlers run as they would in Next.
 const jar = new Map<string, string>();
+const hdrs = new Map<string, string>([['host', 'test'], ['x-forwarded-for', '203.0.113.7']]);
 vi.mock('next/headers', () => ({
+  headers: async () => ({ get: (n: string) => hdrs.get(n.toLowerCase()) ?? null }),
   cookies: async () => ({
     get: (n: string) => (jar.has(n) ? { name: n, value: jar.get(n)! } : undefined),
     set: (n: string, v: string) => void jar.set(n, v),
@@ -44,6 +46,8 @@ beforeAll(async () => {
     TELEGRAM_BOT_TOKEN: 'test-token',
     TELEGRAM_WEBHOOK_SECRET: 'tg-secret',
     TELEGRAM_APPROVER_CHAT_ID: '42',
+    TELEGRAM_BOT_USERNAME: 'twokey_test_bot',
+    SANDBOX_SIGNUPS: 'true',
   });
   routes = {
     payments: await import('../app/api/v1/payments/route'),
@@ -191,5 +195,59 @@ describe('agent keys are issued by the owner', () => {
     expect(old.status).toBe(401);
     const fresh = await routes.payments.POST(req('POST', '/api/v1/payments', body, { authorization: `Bearer ${apiKey}`, 'idempotency-key': 'inv-new-key-1' }));
     expect(fresh.status).toBe(202);
+  });
+});
+
+describe('self-serve sandbox', () => {
+  const signup = async (email: string, origin = 'http://test') => {
+    const { POST } = await import('../app/api/auth/signup/route');
+    return POST(req('POST', '/api/auth/signup', { email, password: 'a long sandbox password', workspace: 'Northwind Ops' }, origin ? { origin } : {}));
+  };
+
+  it('refuses a cross-site sign-up, weak passwords and a taken email', async () => {
+    jar.clear();
+    expect((await signup('x@northwind.co', 'https://evil.example')).status).toBe(403);
+    const { POST } = await import('../app/api/auth/signup/route');
+    const weak = await POST(req('POST', '/api/auth/signup', { email: 'y@northwind.co', password: 'short', workspace: 'W' }, { origin: 'http://test' }));
+    expect(weak.status).toBe(400);
+    expect((await signup('owner@twokey.test')).status).toBe(409);
+  });
+
+  it("signs up into its own workspace: it sees none of the deployment's approvals and its agent pays from its own mandate", async () => {
+    jar.clear();
+    const r = await signup('maya@northwind.co');
+    expect(r.status).toBe(201);
+    const { orgId } = await r.json();
+    expect(orgId).toMatch(/^org_sb_/);
+    expect(jar.get('tk_session')).toBeTruthy();
+
+    // The deployment's org has pending approvals from the tests above; the sandbox owner sees none of them.
+    const list = await routes.approvals.GET(req('GET', '/api/v1/approvals?status=PENDING'));
+    expect((await list.json()).approvals).toEqual([]);
+
+    // Its key is namespaced, and a payment before its mandate exists cannot run on the deployment's mandate.
+    const { POST: issue } = await import('../app/api/v1/agents/key/route');
+    const k = await issue(req('POST', '/api/v1/agents/key', {}, { 'x-csrf-token': jar.get('tk_csrf')! }));
+    const { agentId, apiKey } = await k.json();
+    expect(agentId).toBe(`ap-${orgId.slice(7)}`);
+    const pay = await routes.payments.POST(req('POST', '/api/v1/payments', { payee: { payeeId: 'pay_oceanic' }, amount: '0.10' }, { authorization: `Bearer ${apiKey}`, 'idempotency-key': 'sb-first-0001' }));
+    expect((await pay.json()).status).toBe('BLOCKED');
+  });
+
+  it('links the owner chat from /start, and only that chat can decide for that workspace', async () => {
+    const { getOrg } = await import('@twokey-arc/core');
+    const { users } = await import('@twokey-arc/db');
+    const { eq } = await import('drizzle-orm');
+    const [u] = await h.db.select().from(users).where(eq(users.email, 'maya@northwind.co'));
+    const org = (await getOrg(h.db, u!.orgId!))!;
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ ok: true, result: { message_id: 1 } }))));
+    const tg = (body: unknown) => routes.telegramHook.POST(req('POST', '/api/telegram/webhook', body, { 'x-telegram-bot-api-secret-token': 'tg-secret' }));
+    expect((await tg({ message: { chat: { id: 777 }, text: `/start ${org.telegramLinkCode}` } })).status).toBe(200);
+    const { orgForTelegramChat } = await import('@twokey-arc/core');
+    expect(await orgForTelegramChat(h.db, '777')).toMatchObject({ orgId: org.id });
+    // The deployment's own approver chat cannot be pulled into a sandbox.
+    await tg({ message: { chat: { id: 42 }, text: `/start ${(await getOrg(h.db, org.id))!.telegramLinkCode}` } });
+    expect(await orgForTelegramChat(h.db, '42')).toBeNull();
+    vi.unstubAllGlobals();
   });
 });

@@ -6,7 +6,7 @@ import { SignatureCard } from '@/components/signature-card';
 import { explorerTx, TESTNET_EXPLORER } from '@/lib/explorer';
 import { networkName } from '@/lib/format';
 import { publicStats, recentReceipts, type PublicStats, type Receipt } from '@/lib/public-stats';
-import { cfg, DEMO_ENABLED, demoCfg } from '@/lib/server';
+import { cfg, DEMO_ENABLED, demoCfg, SANDBOX_ENABLED } from '@/lib/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -84,8 +84,8 @@ export default async function Landing() {
             <a href="#developers">Developers</a>
           </div>
           <div className="lp-cta">
-            <Link className="btn btn-sm lp-console" href="/app">
-              Console
+            <Link className="btn btn-sm lp-console" href={SANDBOX_ENABLED ? '/signup' : '/app'}>
+              {SANDBOX_ENABLED ? 'Start free' : 'Console'}
             </Link>
             <Link className="btn btn-ink btn-sm" href="/demo">
               Countersign a live payment
@@ -124,9 +124,15 @@ export default async function Landing() {
             <Link className="btn btn-ink" href="/demo">
               Countersign a live payment
             </Link>
-            <a className="btn" href="#seal">
-              How the seal works
-            </a>
+            {SANDBOX_ENABLED ? (
+              <Link className="btn" href="/signup">
+                Start a free sandbox
+              </Link>
+            ) : (
+              <a className="btn" href="#seal">
+                How the seal works
+              </a>
+            )}
           </div>
 
           <div className="window" id="live" aria-label="Live decisions">

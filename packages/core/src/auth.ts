@@ -1,7 +1,7 @@
 import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { and, eq, gt, isNull } from 'drizzle-orm';
 import { agents, sessions, users, type Db, type DbOrTx } from '@twokey-arc/db';
-import { newId } from './base';
+import { newId, TwokeyError } from './base';
 import { appendAudit } from './audit';
 
 /** Agent keys are stored as HMAC-SHA-256(pepper, key), never in clear. */
@@ -75,6 +75,8 @@ export async function issueAgentKey(
   const now = i.now ?? new Date();
   return db.transaction(async (tx) => {
     const [existing] = await tx.select().from(agents).where(eq(agents.agentId, i.agentId));
+    // Agent ids are global; one workspace must never rotate (and so revoke) another workspace's agent.
+    if (existing && existing.orgId !== i.orgId) throw new TwokeyError('agent_id_taken', 409, 'this agent id belongs to another workspace');
     if (existing) {
       await tx.update(agents).set({ status: 'REVOKED', agentId: `${i.agentId}-revoked-${now.getTime()}` }).where(eq(agents.id, existing.id));
     }

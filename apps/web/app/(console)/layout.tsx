@@ -4,13 +4,13 @@ import { approvals } from '@twokey-arc/db';
 import { SignOut } from '@/components/client';
 import { NavLinks } from '@/components/nav';
 import { networkName } from '@/lib/format';
-import { cfg, db } from '@/lib/server';
+import { db } from '@/lib/server';
 import { pageOwner } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 
 export default async function ConsoleLayout({ children }: { children: React.ReactNode }) {
-  const { user, csrf } = await pageOwner();
+  const { user, csrf, cfg, sandbox } = await pageOwner();
   const [pending] = await db().select({ n: count() }).from(approvals).where(and(eq(approvals.orgId, cfg.orgId), eq(approvals.status, 'PENDING')));
   return (
     <div className="app">
@@ -27,6 +27,7 @@ export default async function ConsoleLayout({ children }: { children: React.Reac
             <span className="live-dot" /> {networkName(cfg.network)} · {cfg.chainId}
           </span>
           {cfg.network === 'ARC' && <span className="pill lime">Real USDC</span>}
+          {sandbox && <span className="pill">Sandbox · test USDC</span>}
           <SignOut csrf={csrf} />
           <span className="av" title={user.displayName}>
             {user.displayName.slice(0, 1).toUpperCase()}

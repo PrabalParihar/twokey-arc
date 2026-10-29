@@ -19,9 +19,16 @@ export function loadConfig() {
     approvalGraceSeconds: Number(process.env.APPROVAL_GRACE_SECONDS ?? 0),
     demoMode: process.env.DEMO_MODE === 'true',
   };
+  const bot = process.env.TELEGRAM_BOT_TOKEN
+    ? { token: process.env.TELEGRAM_BOT_TOKEN, appBaseUrl: process.env.APP_BASE_URL ?? 'http://localhost:3000', maxApproveUsdc: process.env.TELEGRAM_MAX_APPROVE_USDC ?? '100' }
+    : null;
   return {
     cfg,
     net,
+    /** SANDBOX_HOST=true: this testnet executor also provisions and serves every self-serve sandbox workspace. */
+    sandboxHost: process.env.SANDBOX_HOST === 'true',
+    /** The bot alone, for sandbox workspaces whose owners linked their own chat. */
+    telegramBot: bot,
     databaseUrl: process.env.DATABASE_URL_EXECUTOR ?? need('DATABASE_URL'),
     port: Number(process.env.PORT ?? 8081),
     telegram: process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_APPROVER_CHAT_ID

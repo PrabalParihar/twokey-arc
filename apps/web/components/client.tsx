@@ -257,6 +257,9 @@ export function LoginForm() {
       <div className="err" role="alert">
         {err}
       </div>
+      <p style={{ fontSize: 13 }}>
+        New here? <a href="/signup">Start a free sandbox on Arc Testnet</a>
+      </p>
     </form>
   );
 }

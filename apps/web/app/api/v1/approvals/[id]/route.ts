@@ -1,11 +1,11 @@
 import { getApproval, TwokeyError } from '@twokey-arc/core';
-import { handle, json, requireOwner } from '@/lib/http';
-import { cfg, db } from '@/lib/server';
+import { handle, json, requireOwnerCtx } from '@/lib/http';
+import { db } from '@/lib/server';
 
 /** Bound terms, the seal and its canonical bytes, so anyone can recompute it. */
 export function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   return handle(async () => {
-    await requireOwner(req);
+    const { cfg } = await requireOwnerCtx(req);
     const { id } = await params;
     const found = await getApproval(db(), cfg.orgId, id);
     if (!found) throw new TwokeyError('not_found', 404, 'approval not found');

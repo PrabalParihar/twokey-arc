@@ -1,12 +1,12 @@
 import { getActiveMandate, TwokeyError } from '@twokey-arc/core';
 import { handle, json, ownerOrAgent } from '@/lib/http';
-import { cfg, db } from '@/lib/server';
+import { db } from '@/lib/server';
 
 /** Agents see limits and payee ids/names; never wallet ids. The owner sees the whole signed document. */
 export function GET(req: Request) {
   return handle(async () => {
     const who = await ownerOrAgent(req);
-    const m = await getActiveMandate(db(), cfg.orgId);
+    const m = await getActiveMandate(db(), who.cfg.orgId);
     if (!m) throw new TwokeyError('not_found', 404, 'no active mandate');
     if (who.kind === 'owner') return json(m);
     return json({

@@ -81,6 +81,8 @@ export function PaymentDetail(props: {
   treasury: string | null;
   demoMode: boolean;
   networkLabel: string;
+  /** The Arc explorer of the workspace's network: a sandbox is on testnet even when this deployment is on mainnet. */
+  explorer: string;
 }) {
   const { intent: i, approval: a, attempt: at, feed } = props;
   const chip = statusChip(i.status);
@@ -108,7 +110,7 @@ export function PaymentDetail(props: {
             {i.destinationAddress && (
               <>
                 {' · '}
-                <a href={explorerAddress(i.destinationAddress)} title={i.destinationAddress} target="_blank" rel="noreferrer">
+                <a href={explorerAddress(i.destinationAddress, props.explorer)} title={i.destinationAddress} target="_blank" rel="noreferrer">
                   {shortAddr(i.destinationAddress)}
                 </a>
               </>
@@ -185,7 +187,7 @@ export function PaymentDetail(props: {
       {i.status === 'PAID' && at?.txHash && (
         <div className="sh-note paid">
           Final on Arc ·{' '}
-          <a href={explorerTx(at.txHash)} target="_blank" rel="noreferrer">
+          <a href={explorerTx(at.txHash, props.explorer)} target="_blank" rel="noreferrer">
             tx {at.txHash.slice(0, 10)}…{at.txHash.slice(-4)}
           </a>
         </div>

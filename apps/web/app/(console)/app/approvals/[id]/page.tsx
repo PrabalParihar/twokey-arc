@@ -5,13 +5,13 @@ import { auditForPayment, getActiveMandate, getApproval } from '@twokey-arc/core
 import { AutoRefresh } from '@/components/client';
 import { PaymentDetail } from '@/components/payment-detail';
 import { networkName } from '@/lib/format';
-import { cfg, db } from '@/lib/server';
+import { db } from '@/lib/server';
 import { pageOwner } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 
 export default async function ApprovalPage({ params }: { params: Promise<{ id: string }> }) {
-  const { csrf } = await pageOwner();
+  const { csrf, cfg } = await pageOwner();
   const { id } = await params;
   const found = await getApproval(db(), cfg.orgId, id);
   if (!found) notFound();
@@ -39,6 +39,7 @@ export default async function ApprovalPage({ params }: { params: Promise<{ id: s
           treasury={mandate?.source_wallet.address ?? null}
           demoMode={cfg.demoMode}
           networkLabel={`${networkName(cfg.network)} (${cfg.chainId})`}
+              explorer={cfg.explorerUrl}
         />
       </div>
     </>

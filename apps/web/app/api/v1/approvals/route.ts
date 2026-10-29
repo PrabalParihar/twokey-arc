@@ -1,10 +1,10 @@
 import { listApprovals } from '@twokey-arc/core';
-import { handle, json, requireOwner } from '@/lib/http';
-import { cfg, db } from '@/lib/server';
+import { handle, json, requireOwnerCtx } from '@/lib/http';
+import { db } from '@/lib/server';
 
 export function GET(req: Request) {
   return handle(async () => {
-    await requireOwner(req);
+    const { cfg } = await requireOwnerCtx(req);
     const status = new URL(req.url).searchParams.get('status') as 'PENDING' | null;
     const rows = await listApprovals(db(), cfg.orgId, status ?? undefined);
     return json({

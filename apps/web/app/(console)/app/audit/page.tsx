@@ -3,12 +3,12 @@ import type { AuditEntry } from '@twokey-arc/seal';
 import { AutoRefresh, VerifyChain } from '@/components/client';
 import { displayUsdc, sealGroups, timeIst } from '@/lib/format';
 import { explorerTx } from '@/lib/explorer';
-import { cfg, db } from '@/lib/server';
+import { db } from '@/lib/server';
 import { pageOwner } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 
-function line(e: AuditEntry): React.ReactNode {
+function line(e: AuditEntry, explorer: string): React.ReactNode {
   const d = e.data as Record<string, string | null | string[]>;
   const amt = (v: unknown) => (typeof v === 'string' ? displayUsdc(v) : '');
   switch (e.verb) {
@@ -35,7 +35,7 @@ function line(e: AuditEntry): React.ReactNode {
         <>
           Paid · Circle tx <span className="mono">{String(d.circle_transaction_id).slice(0, 8)}…</span> · Arc tx{' '}
           {d.tx_hash ? (
-            <a className="mono" href={explorerTx(String(d.tx_hash))} target="_blank" rel="noreferrer">
+            <a className="mono" href={explorerTx(String(d.tx_hash), explorer)} target="_blank" rel="noreferrer">
               {String(d.tx_hash).slice(0, 12)}… ↗
             </a>
           ) : (
@@ -50,7 +50,7 @@ function line(e: AuditEntry): React.ReactNode {
 }
 
 export default async function AuditPage() {
-  await pageOwner();
+  const { cfg } = await pageOwner();
   const [entries, v] = await Promise.all([listAudit(db(), cfg.orgId), verifyAudit(db(), cfg.orgId)]);
   return (
     <>
@@ -69,7 +69,7 @@ export default async function AuditPage() {
             <time>{timeIst(e.at)}</time>
             <div>
               <div>
-                {line(e)} <span className="mono" style={{ color: 'var(--faint)' }}>· {e.subject_id}</span>
+                {line(e, cfg.explorerUrl)} <span className="mono" style={{ color: 'var(--faint)' }}>· {e.subject_id}</span>
               </div>
               <div className="h">
                 {e.verb} · {e.entry_hash.slice(0, 23)}… ← {e.prev_hash.slice(0, 15)}…

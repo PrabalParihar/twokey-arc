@@ -1,7 +1,7 @@
 import 'server-only';
 import { eq } from 'drizzle-orm';
 import type { PgBoss } from 'pg-boss';
-import { bossJobs, startBoss, type CoreConfig, type CoreDeps } from '@twokey-arc/core';
+import { bossJobs, isSandboxOrg, QUEUES, queueName, startBoss, TwokeyError, type CoreConfig, type CoreDeps } from '@twokey-arc/core';
 import { createDb, users, type Db } from '@twokey-arc/db';
 import { assertNoCircleSecrets } from './boot';
 import { ARC_EXPLORER, TESTNET_EXPLORER } from './explorer';
@@ -39,7 +39,22 @@ export const demoCfg: CoreConfig = {
   approvalGraceSeconds: 6,
 };
 
-type State = { db: Db; boss: Promise<PgBoss>; ownerReady: Promise<void> };
+/**
+ * Self-serve sandbox workspaces (SANDBOX_SIGNUPS=true): each signup gets its own org on Arc Testnet, served by
+ * the testnet executor. Like the public demo, a sandbox never runs on mainnet, whatever this deployment runs.
+ */
+export const SANDBOX_ENABLED = process.env.SANDBOX_SIGNUPS === 'true';
+export const sandboxCfg = (orgId: string): CoreConfig => ({ ...demoCfg, orgId, demoMode: false, approvalGraceSeconds: 0 });
+
+/** The config a request runs under: the deployment's own org, the public demo, or one sandbox workspace. */
+export function cfgForOrg(orgId: string | null | undefined): CoreConfig {
+  if (!orgId || orgId === cfg.orgId) return cfg;
+  if (orgId === demoCfg.orgId) return demoCfg;
+  if (isSandboxOrg(orgId)) return sandboxCfg(orgId);
+  throw new TwokeyError('unknown_org', 403, 'unknown workspace');
+}
+
+type State = { db: Db; boss: Promise<PgBoss>; ownerReady: Promise<void>; queues: Set<string> };
 const g = globalThis as unknown as { __twokey?: State };
 
 function init(): State {
@@ -48,7 +63,7 @@ function init(): State {
   const { db } = createDb(url, 10);
   const boss = startBoss(url, 'web', DEMO_ENABLED ? [cfg.orgId, demoCfg.orgId] : [cfg.orgId]);
   boss.catch((e: Error) => console.error('pg-boss (web) failed to start:', e.message));
-  return { db, boss, ownerReady: ensureOwner(db) };
+  return { db, boss, ownerReady: ensureOwner(db), queues: new Set(DEMO_ENABLED ? [cfg.orgId, demoCfg.orgId] : [cfg.orgId]) };
 }
 
 /** Upserts the single owner from OWNER_EMAIL + OWNER_PASSWORD_HASH (argon2id), so a fresh deploy can log in. */
@@ -74,5 +89,11 @@ export const ownerReady = () => state().ownerReady;
 
 export async function deps(config: CoreConfig = cfg): Promise<CoreDeps> {
   const s = state();
-  return { db: s.db, cfg: config, jobs: bossJobs(await s.boss, config.orgId) };
+  const boss = await s.boss;
+  // A sandbox org's queues are created on first use; pg-boss refuses to send to a queue that does not exist.
+  if (!s.queues.has(config.orgId)) {
+    for (const q of QUEUES) await boss.createQueue(queueName(config.orgId, q));
+    s.queues.add(config.orgId);
+  }
+  return { db: s.db, cfg: config, jobs: bossJobs(boss, config.orgId) };
 }

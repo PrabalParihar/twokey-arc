@@ -2,13 +2,13 @@ import { getActiveMandate, latestBalance } from '@twokey-arc/core';
 import { CopyButton, IssueAgentKey } from '@/components/client';
 import { dateTimeIst, displayUsdc, networkName, sealGroups, shortAddr } from '@/lib/format';
 import { explorerAddress } from '@/lib/explorer';
-import { cfg, db } from '@/lib/server';
+import { db } from '@/lib/server';
 import { pageOwner } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 
 export default async function MandatePage() {
-  const { csrf } = await pageOwner();
+  const { csrf, cfg } = await pageOwner();
   const m = await getActiveMandate(db(), cfg.orgId);
   if (!m) {
     return (
@@ -53,7 +53,7 @@ export default async function MandatePage() {
             <h3>Treasury (Circle wallet on Arc)</h3>
             <div className="big">{bal ? displayUsdc(bal.usdc) : '—'}</div>
             <p>
-              <a href={explorerAddress(m.source_wallet.address)} target="_blank" rel="noreferrer" className="mono" style={{ color: 'var(--lime)' }}>
+              <a href={explorerAddress(m.source_wallet.address, cfg.explorerUrl)} target="_blank" rel="noreferrer" className="mono" style={{ color: 'var(--lime)' }}>
                 {shortAddr(m.source_wallet.address)} ↗
               </a>{' '}
               · keeps {displayUsdc(m.limits.min_balance_after)} for gas (USDC)
