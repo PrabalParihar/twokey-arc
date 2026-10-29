@@ -10,7 +10,7 @@
  * Voice: ELEVENLABS_API_KEY from the environment or ~/Desktop/twokey/.env.local (never printed), else macOS `say`.
  * Writes apps/web/public/video/twokey-on-arc.mp4.
  */
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
@@ -135,7 +135,55 @@ async function synthesize() {
   return { eleven, audio };
 }
 
+/**
+ * Screen recording falls behind the wall clock on heavy pages (about 12 s over this video), so each voice line is
+ * placed where its caption actually appears in the frames, found by scene changes in the caption strip.
+ */
+function captionTimesMs(raw: string, cues: { key: Key; atMs: number }[]): number[] {
+  const r = spawnSync('ffmpeg', ['-v', 'info', '-i', raw, '-vf', "crop=1100:76:250:796,select='gt(scene,0.06)',showinfo", '-an', '-f', 'null', '-'], { encoding: 'utf8' });
+  const changes = [...r.stderr.matchAll(/pts_time:([\d.]+)/g)].map((m) => Math.round(Number(m[1]) * 1000));
+  let offset = 0;
+  let last = -1;
+  return cues.map((c) => {
+    const hit = changes.find((t) => t > last && t >= c.atMs + offset - 300 && t <= c.atMs + offset + 8000);
+    const at = hit ?? c.atMs + offset;
+    offset = at - c.atMs;
+    last = at;
+    return at;
+  });
+}
+
+function mux(raw: string, cues: { key: Key; atMs: number }[], audio: Record<Key, { file: string; seconds: number }>) {
+  const times = captionTimesMs(raw, cues);
+  console.log(`caption lag (s): ${times.map((t, i) => ((t - cues[i]!.atMs) / 1000).toFixed(1)).join(' ')}`);
+  writeFileSync(join(OUT, 'cues-video.json'), JSON.stringify(cues.map((c, i) => ({ key: c.key, atMs: times[i] }))));
+  const inputs = ['-y', '-i', raw];
+  const filters: string[] = [];
+  cues.forEach((cue, i) => {
+    inputs.push('-i', audio[cue.key].file);
+    filters.push(`[${i + 1}:a]adelay=${times[i]}|${times[i]}[a${i}]`);
+  });
+  const mix = `${cues.map((_, i) => `[a${i}]`).join('')}amix=inputs=${cues.length}:normalize=0,loudnorm=I=-16:TP=-1.5:LRA=11[aout]`;
+  const mp4 = join(OUT, 'twokey-on-arc.mp4');
+  execFileSync(
+    'ffmpeg',
+    [...inputs, '-filter_complex', [...filters, mix].join(';'), '-map', '0:v', '-map', '[aout]', '-c:v', 'libx264', '-preset', 'medium', '-crf', '26', '-pix_fmt', 'yuv420p', '-r', '30', '-c:a', 'aac', '-b:a', '128k', '-ar', '48000', '-movflags', '+faststart', mp4],
+    { stdio: 'ignore' },
+  );
+  const pub = join(ROOT, 'apps/web/public/video');
+  mkdirSync(pub, { recursive: true });
+  copyFileSync(mp4, join(pub, 'twokey-on-arc.mp4'));
+  console.log(`video: ${mp4} (${seconds(mp4).toFixed(1)} s)`);
+}
+
 async function main() {
+  // `--mux-only` rebuilds the MP4 from the last recording and the cached voice lines.
+  if (process.argv.includes('--mux-only')) {
+    const { audio } = await synthesize();
+    const rawDir = join(OUT, 'raw');
+    mux(join(rawDir, readdirSync(rawDir).find((f) => f.endsWith('.webm'))!), JSON.parse(readFileSync(join(OUT, 'cues.json'), 'utf8')), audio);
+    return;
+  }
   rmSync(join(OUT, 'raw'), { recursive: true, force: true });
   const { eleven, audio } = await synthesize();
   console.log(`voice: ${Object.keys(audio).length} lines via ${eleven ? 'ElevenLabs' : 'say'}`);
@@ -317,23 +365,7 @@ async function main() {
 
   const raw = join(rawDir, readdirSync(rawDir).find((f) => f.endsWith('.webm'))!);
   writeFileSync(join(OUT, 'cues.json'), JSON.stringify(cues));
-  const inputs = ['-y', '-i', raw];
-  const filters: string[] = [];
-  cues.forEach((cue, i) => {
-    inputs.push('-i', audio[cue.key].file);
-    filters.push(`[${i + 1}:a]adelay=${cue.atMs}|${cue.atMs}[a${i}]`);
-  });
-  const mix = `${cues.map((_, i) => `[a${i}]`).join('')}amix=inputs=${cues.length}:normalize=0,loudnorm=I=-16:TP=-1.5:LRA=11[aout]`;
-  const mp4 = join(OUT, 'twokey-on-arc.mp4');
-  execFileSync(
-    'ffmpeg',
-    [...inputs, '-filter_complex', [...filters, mix].join(';'), '-map', '0:v', '-map', '[aout]', '-c:v', 'libx264', '-preset', 'medium', '-crf', '26', '-pix_fmt', 'yuv420p', '-r', '30', '-c:a', 'aac', '-b:a', '128k', '-movflags', '+faststart', mp4],
-    { stdio: 'ignore' },
-  );
-  const pub = join(ROOT, 'apps/web/public/video');
-  mkdirSync(pub, { recursive: true });
-  copyFileSync(mp4, join(pub, 'twokey-on-arc.mp4'));
-  console.log(`video: ${mp4} (${seconds(mp4).toFixed(1)} s)`);
+  mux(raw, cues, audio);
 }
 
 main().catch((e: Error) => {
