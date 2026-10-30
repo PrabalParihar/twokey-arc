@@ -35,6 +35,21 @@ Round 2 closes **Nov 2, 2026, 10:29 IST** (Nov 1 in the US). It needs contracts 
 - **Countersign:** the agent requests 0.20 USDC (over the limit), and the owner countersigns.
 - **Total cost:** about 0.25 USDC plus gas.
 
+## Live on Arc mainnet (30 Oct 2026)
+- **Contract:** `0x5D1333bA6E53Cb3A5Ff26Ff22cC1d4E9c8A49715`, https://explorer.arc.io/address/0x5D1333bA6E53Cb3A5Ff26Ff22cC1d4E9c8A49715
+  - Deployed from the owner's MetaMask with the app's Deploy card.
+  - Deploy tx `0xf360bf0fda031a1e500d56cc7e4153397430f3835c2be5649571e732973b16c7`, block 28645318.
+  - Owner `0x548c68cD338442eE5C64D43cd3061C978aE2cF98`, max hold 7 days.
+- **Payee:** the Twokey mainnet treasury `0x6d57604cbefd802a0d74ae5bb0461891711adbf2`, pinned with a cap of 0.05 per payment.
+- **Agent:** the owner wallet, with a 0.25 cap per rolling 24h.
+- **Funding:** the escrow was funded with 0.30 USDC.
+- **Auto-pay, request #1, 0.05 USDC:** `0xe7419fbacc7bc55307ad102169a6ed5556ea0db2c43a188b23740981a07d1fce`
+- **Held, request #2, 0.20 USDC:** `0x3a4b437059a89f8200afeb536e43637c3d49bdc7860fb952617e4481ab920dce`
+- **Countersigned and paid, request #2:** `0x2d74a412751c41974f2637ad30ef3b2cccbec1af4d0baa3654b531d8dbdbf24d`
+- **Live app:** https://fascinating-figolla-b5b7a2.netlify.app
+- **Repo:** https://github.com/PrabalParihar/twokey-escrow-studio
+- **Arc Studio project:** https://studio.arc.io/app/79af613f-395f-4540-8682-9de524aac944
+
 ## DoraHacks fields
 - **Name:** Twokey Escrow: the two-key rule for agent payments, onchain
 - **Short description:** AI agents pay pinned payees on their own within a limit. Anything else waits in escrow until a human countersigns the exact terms, matched by hash, on Arc mainnet.
